@@ -107,6 +107,11 @@ include_bitcoin_node_HEADERS = \
     include/bitcoin/node/settings.hpp \
     include/bitcoin/node/version.hpp
 
+include_bitcoin_node_impldir = ${includedir}/bitcoin/node/impl
+include_bitcoin_node_impl_HEADERS = \
+    include/bitcoin/node/impl/protocol.ipp \
+    include/bitcoin/node/impl/session.ipp
+
 include_bitcoin_node_protocolsdir = ${includedir}/bitcoin/node/protocols
 include_bitcoin_node_protocols_HEADERS = \
     include/bitcoin/node/protocols/protocol.hpp \

@@ -20,8 +20,8 @@
 #ifndef LIBBITCOIN_NODE_SESSION_HPP
 #define LIBBITCOIN_NODE_SESSION_HPP
 
+#include <utility>
 #include <bitcoin/network.hpp>
-#include <bitcoin/node/define.hpp>
 
 namespace libbitcoin {
 namespace node {
@@ -31,24 +31,17 @@ class p2p_node;
 /// Intermediate session base class template.
 /// This avoids having to make network::session into a template.
 template <class Session>
-class BCN_API session
+class session
   : public Session
 {
 protected:
     /// Construct an instance.
-    session(p2p_node& network, bool notify_on_connect)
-      : Session(network, notify_on_connect), node_network_(network)
-    {
-    }
+    session(p2p_node& network, bool notify_on_connect);
 
     /// Attach a protocol to a channel, caller must start the channel.
     template <class Protocol, typename... Args>
     typename Protocol::ptr attach(network::channel::ptr channel,
-        Args&&... args)
-    {
-        return std::make_shared<Protocol>(node_network_, channel,
-            std::forward<Args>(args)...);
-    }
+        Args&&... args);
 
 private:
 
@@ -58,5 +51,7 @@ private:
 
 } // namespace node
 } // namespace libbitcoin
+
+#include <bitcoin/node/impl/session.ipp>
 
 #endif

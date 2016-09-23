@@ -68,6 +68,8 @@
     <Import Project="$(ProjectDir)$(ProjectName).props" />
   </ImportGroup>
   <ItemGroup>
+    <None Include="..\..\..\..\include\bitcoin\node\impl\protocol.ipp" />
+    <None Include="..\..\..\..\include\bitcoin\node\impl\session.ipp" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

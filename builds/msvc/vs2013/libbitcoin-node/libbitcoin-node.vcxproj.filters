@@ -2,6 +2,12 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="..\..\..\..\include\bitcoin\node\impl\protocol.ipp">
+      <Filter>include\bitcoin\node\impl</Filter>
+    </None>
+    <None Include="..\..\..\..\include\bitcoin\node\impl\session.ipp">
+      <Filter>include\bitcoin\node\impl</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -33,6 +39,9 @@
     </Filter>
     <Filter Include="src\utility">
       <UniqueIdentifier>{ab239a4e-9f2e-476a-ac8c-4c4e8acd06ff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\bitcoin\node\impl">
+      <UniqueIdentifier>{2ed7d0fa-df25-4dab-a3c2-68baa5f1a5c3}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

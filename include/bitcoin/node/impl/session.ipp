@@ -17,44 +17,37 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef LIBBITCOIN_NODE_PROTOCOL_HPP
-#define LIBBITCOIN_NODE_PROTOCOL_HPP
+#ifndef LIBBITCOIN_NODE_SESSION_IPP
+#define LIBBITCOIN_NODE_SESSION_IPP
 
-#include <cstddef>
+#include <memory>
 #include <utility>
 #include <bitcoin/network.hpp>
+
+// This must be excluded due to circularity.
+// Instead reply on the include chain from p2p_node to here.
+////#include <bitcoin/node/p2p_node.hpp>
 
 namespace libbitcoin {
 namespace node {
 
-class p2p_node;
-
-/// Intermediate protocol base class template.
-/// This avoids having to make network::protocol into a template.
-template <class Protocol>
-class protocol
-  : public Protocol
+template <class Session>
+session<Session>::session(p2p_node& network, bool notify_on_connect)
+  : Session(network, notify_on_connect),
+    node_network_(network)
 {
-protected:
-    /// Construct an instance.
-    template <typename... Args>
-    protocol(p2p_node& network, network::channel::ptr channel, Args&&... args);
+}
 
-    /// Return the current top block height.
-    virtual size_t top_height() const;
-
-    /// Return the current top block hash.
-    virtual hash_digest top_hash() const;
-
-private:
-
-    // This is thread safe.
-    p2p_node& node_network_;
-};
+template <class Session>
+template <class Protocol, typename... Args>
+typename Protocol::ptr session<Session>::attach(network::channel::ptr channel,
+    Args&&... args)
+{
+    return std::make_shared<Protocol>(node_network_, channel,
+        std::forward<Args>(args)...);
+}
 
 } // namespace node
 } // namespace libbitcoin
-
-#include <bitcoin/node/impl/protocol.ipp>
 
 #endif

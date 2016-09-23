@@ -17,44 +17,42 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef LIBBITCOIN_NODE_PROTOCOL_HPP
-#define LIBBITCOIN_NODE_PROTOCOL_HPP
+#ifndef LIBBITCOIN_NODE_PROTOCOL_IPP
+#define LIBBITCOIN_NODE_PROTOCOL_IPP
 
 #include <cstddef>
 #include <utility>
 #include <bitcoin/network.hpp>
 
+// This must be excluded due to circularity.
+// Instead reply on the include chain from p2p_node to here.
+////#include <bitcoin/node/p2p_node.hpp>
+
 namespace libbitcoin {
 namespace node {
 
-class p2p_node;
-
-/// Intermediate protocol base class template.
-/// This avoids having to make network::protocol into a template.
 template <class Protocol>
-class protocol
-  : public Protocol
+template <typename... Args>
+protocol<Protocol>::protocol(p2p_node& network, network::channel::ptr channel,
+    Args&&... args)
+  : Protocol(network, channel, std::forward<Args>(args)...),
+    node_network_(network)
 {
-protected:
-    /// Construct an instance.
-    template <typename... Args>
-    protocol(p2p_node& network, network::channel::ptr channel, Args&&... args);
+}
 
-    /// Return the current top block height.
-    virtual size_t top_height() const;
+template <class Protocol>
+size_t protocol<Protocol>::top_height() const
+{
+    return node_network_.top_height();
+}
 
-    /// Return the current top block hash.
-    virtual hash_digest top_hash() const;
-
-private:
-
-    // This is thread safe.
-    p2p_node& node_network_;
-};
+template <class Protocol>
+hash_digest protocol<Protocol>::top_hash() const
+{
+    return node_network_.top_hash();
+}
 
 } // namespace node
 } // namespace libbitcoin
-
-#include <bitcoin/node/impl/protocol.ipp>
 
 #endif
