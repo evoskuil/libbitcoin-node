@@ -109,6 +109,7 @@ include_bitcoin_node_HEADERS = \
 
 include_bitcoin_node_protocolsdir = ${includedir}/bitcoin/node/protocols
 include_bitcoin_node_protocols_HEADERS = \
+    include/bitcoin/node/protocols/protocol.hpp \
     include/bitcoin/node/protocols/protocol_block_in.hpp \
     include/bitcoin/node/protocols/protocol_block_out.hpp \
     include/bitcoin/node/protocols/protocol_block_sync.hpp \
