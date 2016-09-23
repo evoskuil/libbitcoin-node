@@ -29,7 +29,7 @@ namespace node {
 class p2p_node;
 
 /// Intermediate session base class template.
-/// This avoids having to make network::session into a tempalte.
+/// This avoids having to make network::session into a template.
 template <class Session>
 class BCN_API session
   : public Session
