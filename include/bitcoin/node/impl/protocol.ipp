@@ -23,18 +23,15 @@
 #include <cstddef>
 #include <utility>
 #include <bitcoin/network.hpp>
-
-// This must be excluded due to circularity.
-// Instead reply on the include chain from p2p_node to here.
-////#include <bitcoin/node/p2p_node.hpp>
+#include <bitcoin/node/node_interface.hpp>
 
 namespace libbitcoin {
 namespace node {
 
 template <class Protocol>
 template <typename... Args>
-protocol<Protocol>::protocol(p2p_node& network, network::channel::ptr channel,
-    Args&&... args)
+protocol<Protocol>::protocol(node_interface& network,
+    network::channel::ptr channel, Args&&... args)
   : Protocol(network, channel, std::forward<Args>(args)...),
     node_network_(network)
 {

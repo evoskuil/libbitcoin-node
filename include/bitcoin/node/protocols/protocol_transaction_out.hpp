@@ -26,11 +26,10 @@
 #include <bitcoin/blockchain.hpp>
 #include <bitcoin/network.hpp>
 #include <bitcoin/node/define.hpp>
+#include <bitcoin/node/node_interface.hpp>
 
 namespace libbitcoin {
 namespace node {
-
-class p2p_node;
 
 class BCN_API protocol_transaction_out
   : public network::protocol_events, track<protocol_transaction_out>
@@ -39,8 +38,8 @@ public:
     typedef std::shared_ptr<protocol_transaction_out> ptr;
 
     /// Construct a transaction protocol instance.
-    protocol_transaction_out(p2p_node& network, network::channel::ptr channel,
-        blockchain::full_chain& blockchain);
+    protocol_transaction_out(node_interface& network,
+        network::channel::ptr channel, blockchain::full_chain& blockchain);
 
     /// Start the protocol.
     virtual void start();

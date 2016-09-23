@@ -28,11 +28,10 @@
 #include <bitcoin/node/configuration.hpp>
 #include <bitcoin/node/define.hpp>
 #include <bitcoin/node/utility/header_queue.hpp>
+#include <bitcoin/node/node_interface.hpp>
 
 namespace libbitcoin {
 namespace node {
-
-class p2p_node;
 
 /// Headers sync protocol, thread safe.
 class BCN_API protocol_header_sync
@@ -42,7 +41,7 @@ public:
     typedef std::shared_ptr<protocol_header_sync> ptr;
 
     /// Construct a header sync protocol instance.
-    protocol_header_sync(p2p_node& network, network::channel::ptr channel,
+    protocol_header_sync(node_interface& network, network::channel::ptr channel,
         header_queue& hashes, uint32_t minimum_rate,
         const config::checkpoint& last);
 

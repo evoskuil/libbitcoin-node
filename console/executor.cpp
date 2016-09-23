@@ -166,7 +166,7 @@ bool executor::run()
         return false;
 
     // Now that the directory is verified we can create the node for it.
-    node_ = std::make_shared<p2p_node>(metadata_.configured);
+    node_ = std::make_shared<full_node>(metadata_.configured);
 
     // The callback may be returned on the same thread.
     node_->start(

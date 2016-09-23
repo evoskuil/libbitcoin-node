@@ -23,16 +23,13 @@
 #include <memory>
 #include <utility>
 #include <bitcoin/network.hpp>
-
-// This must be excluded due to circularity.
-// Instead reply on the include chain from p2p_node to here.
-////#include <bitcoin/node/p2p_node.hpp>
+#include <bitcoin/node/node_interface.hpp>
 
 namespace libbitcoin {
 namespace node {
 
 template <class Session>
-session<Session>::session(p2p_node& network, bool notify_on_connect)
+session<Session>::session(node_interface& network, bool notify_on_connect)
   : Session(network, notify_on_connect),
     node_network_(network)
 {

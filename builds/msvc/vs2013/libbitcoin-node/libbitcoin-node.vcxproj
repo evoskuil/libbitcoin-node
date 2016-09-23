@@ -74,7 +74,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\src\configuration.cpp" />
-    <ClCompile Include="..\..\..\..\src\p2p_node.cpp" />
+    <ClCompile Include="..\..\..\..\src\full_node.cpp" />
     <ClCompile Include="..\..\..\..\src\parser.cpp" />
     <ClCompile Include="..\..\..\..\src\protocols\protocol_block_in.cpp" />
     <ClCompile Include="..\..\..\..\src\protocols\protocol_block_out.cpp" />
@@ -97,7 +97,8 @@
     <ClInclude Include="..\..\..\..\include\bitcoin\node.hpp" />
     <ClInclude Include="..\..\..\..\include\bitcoin\node\configuration.hpp" />
     <ClInclude Include="..\..\..\..\include\bitcoin\node\define.hpp" />
-    <ClInclude Include="..\..\..\..\include\bitcoin\node\p2p_node.hpp" />
+    <ClInclude Include="..\..\..\..\include\bitcoin\node\node_interface.hpp" />
+    <ClInclude Include="..\..\..\..\include\bitcoin\node\full_node.hpp" />
     <ClInclude Include="..\..\..\..\include\bitcoin\node\parser.hpp" />
     <ClInclude Include="..\..\..\..\include\bitcoin\node\protocols\protocol.hpp" />
     <ClInclude Include="..\..\..\..\include\bitcoin\node\protocols\protocol_block_in.hpp" />

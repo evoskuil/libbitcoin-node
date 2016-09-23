@@ -23,11 +23,10 @@
 #include <cstddef>
 #include <utility>
 #include <bitcoin/network.hpp>
+#include <bitcoin/node/node_interface.hpp>
 
 namespace libbitcoin {
 namespace node {
-
-class p2p_node;
 
 /// Intermediate protocol base class template.
 /// This avoids having to make network::protocol into a template.
@@ -38,7 +37,8 @@ class protocol
 protected:
     /// Construct an instance.
     template <typename... Args>
-    protocol(p2p_node& network, network::channel::ptr channel, Args&&... args);
+    protocol(node_interface& network, network::channel::ptr channel,
+        Args&&... args);
 
     /// Return the current top block height.
     virtual size_t top_height() const;
@@ -49,7 +49,7 @@ protected:
 private:
 
     // This is thread safe.
-    p2p_node& node_network_;
+    node_interface& node_network_;
 };
 
 } // namespace node

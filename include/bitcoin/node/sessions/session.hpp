@@ -22,11 +22,10 @@
 
 #include <utility>
 #include <bitcoin/network.hpp>
+#include <bitcoin/node/node_interface.hpp>
 
 namespace libbitcoin {
 namespace node {
-
-class p2p_node;
 
 /// Intermediate session base class template.
 /// This avoids having to make network::session into a template.
@@ -36,7 +35,7 @@ class session
 {
 protected:
     /// Construct an instance.
-    session(p2p_node& network, bool notify_on_connect);
+    session(node_interface& network, bool notify_on_connect);
 
     /// Attach a protocol to a channel, caller must start the channel.
     template <class Protocol, typename... Args>
@@ -46,7 +45,7 @@ protected:
 private:
 
     // This is thread safe.
-    p2p_node& node_network_;
+    node_interface& node_network_;
 };
 
 } // namespace node

@@ -24,12 +24,11 @@
 #include <bitcoin/blockchain.hpp>
 #include <bitcoin/network.hpp>
 #include <bitcoin/node/define.hpp>
+#include <bitcoin/node/node_interface.hpp>
 #include <bitcoin/node/sessions/session.hpp>
 
 namespace libbitcoin {
 namespace node {
-
-class p2p_node;
 
 /// Inbound connections session, thread safe.
 class BCN_API session_inbound
@@ -39,7 +38,7 @@ public:
     typedef std::shared_ptr<session_inbound> ptr;
 
     /// Construct an instance.
-    session_inbound(p2p_node& network, blockchain::full_chain& blockchain);
+    session_inbound(node_interface& network, blockchain::full_chain& blockchain);
 
 protected:
     /// Overridden to attach blockchain protocols.
