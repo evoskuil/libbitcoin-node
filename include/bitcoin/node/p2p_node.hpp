@@ -79,6 +79,9 @@ public:
     /// Blockchain query interface.
     virtual blockchain::full_chain& chain();
 
+    /// Return the current top block hash.
+    virtual hash_digest top_hash() const;
+
     // Subscriptions.
     // ------------------------------------------------------------------------
 
@@ -120,7 +123,8 @@ private:
     void handle_running(const code& ec, result_handler handler);
 
     // These are thread safe.
-    header_queue hashes_;
+    bc::atomic<hash_digest> top_hash_;
+    header_queue sync_hashes_;
     blockchain::block_chain blockchain_;
     const uint32_t protocol_maximum_;
     const settings& settings_;

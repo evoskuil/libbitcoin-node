@@ -26,6 +26,7 @@
 #include <bitcoin/blockchain.hpp>
 #include <bitcoin/network.hpp>
 #include <bitcoin/node/define.hpp>
+#include <bitcoin/node/protocols/protocol.hpp>
 
 namespace libbitcoin {
 namespace node {
@@ -33,7 +34,7 @@ namespace node {
 class p2p_node;
 
 class BCN_API protocol_block_out
-  : public network::protocol_events, track<protocol_block_out>
+  : public protocol<network::protocol_events>, track<protocol_block_out>
 {
 public:
     typedef std::shared_ptr<protocol_block_out> ptr;
@@ -69,7 +70,6 @@ private:
 
     blockchain::full_chain& blockchain_;
     bc::atomic<hash_digest> last_locator_top_;
-    std::atomic<size_t> current_chain_height_;
     std::atomic<bool> headers_to_peer_;
 };
 

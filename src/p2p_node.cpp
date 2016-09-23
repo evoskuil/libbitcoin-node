@@ -42,7 +42,8 @@ using namespace std::placeholders;
 
 p2p_node::p2p_node(const configuration& configuration)
   : p2p(configuration.network),
-    hashes_(configuration.chain.checkpoints),
+    top_hash_(null_hash),
+    sync_hashes_(configuration.chain.checkpoints),
     blockchain_(thread_pool(), configuration.chain, configuration.database),
     protocol_maximum_(configuration.network.protocol_maximum),
     settings_(configuration.node)
@@ -161,7 +162,7 @@ void p2p_node::handle_running(const code& ec, result_handler handler)
     }
 
     BITCOIN_ASSERT(height <= max_size_t);
-    set_height(static_cast<size_t>(height));
+    set_top_height(static_cast<size_t>(height));
 
     log::info(LOG_NODE)
         << "Node start height is (" << height << ").";
@@ -196,8 +197,8 @@ bool p2p_node::handle_reorganized(const code& ec, size_t fork_height,
             << encode_hash(block->header.hash()) << "]";
 
     BITCOIN_ASSERT(incoming.size() <= max_size_t - fork_height);
-    const auto height = fork_height + incoming.size();
-    set_height(height);
+    set_top_height(fork_height + incoming.size());
+    top_hash_.store(incoming.back()->header.hash());
     return true;
 }
 
@@ -225,12 +226,12 @@ network::session_outbound::ptr p2p_node::attach_outbound_session()
 session_header_sync::ptr p2p_node::attach_header_sync_session()
 {
     const auto& checkpoints = blockchain_.chain_settings().checkpoints;
-    return attach<session_header_sync>(hashes_, blockchain_, checkpoints);
+    return attach<session_header_sync>(sync_hashes_, blockchain_, checkpoints);
 }
 
 session_block_sync::ptr p2p_node::attach_block_sync_session()
 {
-    return attach<session_block_sync>(hashes_, blockchain_, settings_);
+    return attach<session_block_sync>(sync_hashes_, blockchain_, settings_);
 }
 
 // Shutdown
@@ -285,6 +286,11 @@ const settings& p2p_node::node_settings() const
 full_chain& p2p_node::chain()
 {
     return blockchain_;
+}
+
+hash_digest p2p_node::top_hash() const
+{
+    return top_hash_.load();
 }
 
 // Subscriptions.
