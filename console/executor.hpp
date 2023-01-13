@@ -44,6 +44,7 @@ private:
     static void handle_stop(int code);
 
     void handle_started(const system::code& ec);
+    void handle_handler(const system::code& ec);
     void handle_running(const system::code& ec);
     void handle_stopped(const system::code& ec);
 
@@ -75,12 +76,8 @@ private:
     "The %1% directory is not initialized, run: bn --initchain"
 #define BN_INITIALIZING_CHAIN \
     "Please wait while initializing %1% directory..."
-#define BN_INITCHAIN_NEW \
-    "Failed to create directory %1% with error, '%2%'."
 #define BN_INITCHAIN_EXISTS \
     "Failed because the directory %1% already exists."
-#define BN_INITCHAIN_TRY \
-    "Failed to test directory %1% with error, '%2%'."
 #define BN_INITCHAIN_COMPLETE \
     "Completed initialization."
 #define BN_INITCHAIN_DATABASE_CREATE_FAILURE \
