@@ -32,7 +32,6 @@ BC_PUSH_WARNING(NO_THROW_IN_NOEXCEPT)
 
 // Handle get method.
 // ----------------------------------------------------------------------------
-// fields[] are undeclared noexcept.
 
 void protocol_html::handle_receive_get(const code& ec,
     const method::get& request) NOEXCEPT

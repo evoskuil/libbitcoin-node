@@ -66,7 +66,6 @@ class BCN_API settings
 {
 public:
     DEFAULT_COPY_MOVE_DESTRUCT(settings);
-
     settings() NOEXCEPT;
     settings(system::chain::selection context) NOEXCEPT;
 
@@ -103,11 +102,37 @@ namespace server {
 class BCN_API settings
 {
 public:
+    /// References to process embeded resources for html_server.
+    struct embedded_pages
+    {
+        DEFAULT_COPY_MOVE_DESTRUCT(embedded_pages);
+        embedded_pages() = default;
+
+        virtual system::data_slice css() const NOEXCEPT { return {}; }
+        virtual system::data_slice html() const NOEXCEPT { return {}; }
+        virtual system::data_slice ecma() const NOEXCEPT { return {}; }
+        virtual system::data_slice font() const NOEXCEPT { return {}; }
+        virtual system::data_slice icon() const NOEXCEPT { return {}; }
+
+        /// At least the html page is required to load embedded site.
+        virtual bool enabled() const NOEXCEPT { return !html().empty(); }
+    };
+
     /// html (http/s) document server settings (has directory/default).
     /// This is for web servers that expose a local file system directory.
     struct html_server
       : public network::settings::http_server
     {
+        // embedded_pages reference precludes copy.
+        DELETE_COPY(html_server);
+
+        html_server(const std::string_view& logging_name,
+            const embedded_pages& embedded) NOEXCEPT;
+
+        /// Embeded single page with html, css, js, favicon resource.
+        /// This is a reference to the caller's resource (retained instance).
+        const embedded_pages& pages;
+
         /// Directory to serve.
         std::filesystem::path path{};
 
@@ -118,22 +143,23 @@ public:
         network::config::endpoints origins{};
 
         /// Normalized origins.
-        system::string_list origin_names() const NOEXCEPT;
+        virtual system::string_list origin_names() const NOEXCEPT;
 
         /// !path.empty() && http_server::enabled() [hidden, not virtual]
-        bool enabled() const NOEXCEPT;
+        virtual bool enabled() const NOEXCEPT;
     };
 
-    DEFAULT_COPY_MOVE_DESTRUCT(settings);
+    // html_server precludes copy.
+    DELETE_COPY(settings);
 
-    settings() NOEXCEPT {};
-    settings(system::chain::selection) NOEXCEPT {};
-
-    /// native admin web interface, isolated (http/s, stateless html)
-    server::settings::html_server web{ "web" };
+    settings(system::chain::selection context, const embedded_pages& explore,
+        const embedded_pages& web) NOEXCEPT;
 
     /// native RESTful block explorer (http/s, stateless html/json)
-    server::settings::html_server explore{ "explore" };
+    server::settings::html_server explore;
+
+    /// native admin web interface, isolated (http/s, stateless html)
+    server::settings::html_server web;
 
     /// native websocket query interface (http/s->tcp/s, json, handshake)
     network::settings::websocket_server socket{ "socket" };
