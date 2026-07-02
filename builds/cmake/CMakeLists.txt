@@ -71,12 +71,11 @@ endif()
 #------------------------------------------------------------------------------
 # Project options.
 #------------------------------------------------------------------------------
-option( with-tests "Build tests." ON )
+option( with-tests "Compile with unit tests." ON )
 
 #------------------------------------------------------------------------------
 # Dependencies.
 #------------------------------------------------------------------------------
-
 if ( BUILD_SHARED_LIBS )
   set( libbitcoin-database_USE_STATIC_LIBS "OFF" )
   set( libbitcoin-network_USE_STATIC_LIBS "OFF" )
@@ -99,7 +98,6 @@ find_package( Boost 1.86.0 REQUIRED
 #------------------------------------------------------------------------------
 # Compiler options.
 #------------------------------------------------------------------------------
-
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
 include(CheckCXXSourceCompiles)
@@ -171,12 +169,7 @@ endif()
 #------------------------------------------------------------------------------
 # Linker options.
 #------------------------------------------------------------------------------
-
 include(CheckLinkerFlag)
-
-#------------------------------------------------------------------------------
-# Configurable file(s).
-#------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------
 # libbitcoin-node library
@@ -199,7 +192,7 @@ target_compile_options( libbitcoin-node
     $<$<COMPILE_LANGUAGE:CXX>:-Wno-comment>
     $<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-copy>
     $<$<CXX_COMPILER_ID:Clang>:-Wno-mismatched-tags>
-    -fstack-protector-all
+    $<$<COMPILE_LANGUAGE:CXX>:-fstack-protector-all>
 )
 
 file( GLOB_RECURSE libbitcoin_node_HEADERS CONFIGURE_DEPENDS
@@ -279,7 +272,7 @@ if ( with-tests )
       $<$<CXX_COMPILER_ID:Clang>:-Wno-mismatched-tags>
       $<$<COMPILE_LANGUAGE:CXX>:-Wno-long-long>
       $<$<CXX_COMPILER_ID:GNU>:-fno-var-tracking-assignments>
-      -fstack-protector-all
+      $<$<COMPILE_LANGUAGE:CXX>:-fstack-protector-all>
   )
 
   file( GLOB_RECURSE libbitcoin_node_test_SOURCES CONFIGURE_DEPENDS
@@ -304,6 +297,7 @@ if ( with-tests )
       SOVERSION ${PROJECT_VERSION_MAJOR}
   )
 endif()
+
 #------------------------------------------------------------------------------
 # Installation routine.
 #------------------------------------------------------------------------------
