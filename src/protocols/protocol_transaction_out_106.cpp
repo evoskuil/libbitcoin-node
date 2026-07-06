@@ -150,8 +150,8 @@ bool protocol_transaction_out_106::handle_receive_get_data(const code& ec,
     if (stopped(ec))
         return false;
 
-    // Send and desubscribe.
-    send_transaction(error::success, zero, message);
+    // Post so the completion resubscribe runs outside the current notify().
+    POST(send_transaction, error::success, zero, message);
     return false;
 }
 
