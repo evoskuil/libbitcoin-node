@@ -220,8 +220,9 @@ bool protocol_filter_out_70015::handle_receive_get_filters(const code& ec,
         return false;
     }
 
+    // Post so the completion resubscribe runs outside the current notify().
     span<milliseconds>(events::ancestry_msecs, start);
-    send_filter(error::success, ancestry);
+    POST(send_filter, error::success, ancestry);
     return false;
 }
 
