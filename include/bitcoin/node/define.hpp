@@ -57,7 +57,7 @@ typedef std::function<void(const code&, uint64_t)> estimate_handler;
 
 /// Organization types.
 typedef std::function<void(const code&, size_t)> organize_handler;
-typedef database::store<database::map> store;
+typedef database::store<database::mmap> store;
 typedef database::query<store> query;
 
 /// Work types.
