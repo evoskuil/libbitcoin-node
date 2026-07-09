@@ -107,13 +107,13 @@ private:
         const header_link& link, const atomic_counter_ptr& sequence) NOEXCEPT;
     bool do_schnorr(const system::hash_digest& digest,
         const system::ec_xonly& point, const system::ec_signature& sign,
-        const header_link& link, const atomic_counter_ptr& sequence) NOEXCEPT;
+        const header_link& link) NOEXCEPT;
     bool do_multisig(const system::hash_digest& digest,
         const system::ec_compresseds& points,
         const system::ec_signatures& signs, const header_link& link,
         const atomic_counter_ptr& sequence) NOEXCEPT;
-    bool do_threshold(const threshold& batch, const header_link& link,
-        const atomic_counter_ptr& sequence) NOEXCEPT;
+    bool do_threshold(const threshold& batch,
+        const header_link& link) NOEXCEPT;
 
     // Capture helpers.
     signatures get_capture(const header_link& link) NOEXCEPT;

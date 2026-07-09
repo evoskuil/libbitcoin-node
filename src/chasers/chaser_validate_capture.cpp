@@ -79,13 +79,10 @@ bool chaser_validate::do_ecdsa(const hash_digest& digest,
 
 bool chaser_validate::do_schnorr(const hash_digest& digest,
     const ec_xonly& point, const ec_signature& sign,
-    const header_link& link, const atomic_counter_ptr& sequence) NOEXCEPT
+    const header_link& link) NOEXCEPT
 {
     ++schnorr_;
-    const auto id = (*sequence)++;
-    if (is_limited<uint16_t>(id)) return false;
-    const auto group = narrow_cast<uint16_t>(id);
-    const auto set = archive().set_signature(digest, point, sign, group, link);
+    const auto set = archive().set_signature(digest, point, sign, link);
     if (!set) fault(error::batch6);
     return set;
 }
@@ -94,8 +91,6 @@ bool chaser_validate::do_multisig(const hash_digest& digest,
     const ec_compresseds& points, const ec_signatures& signs,
     const header_link& link, const atomic_counter_ptr& sequence) NOEXCEPT
 {
-    BC_ASSERT(points.size() == signs.size());
-
     multisig_ += points.size();
     const auto id = (*sequence)++;
     if (is_limited<uint16_t>(id)) return false;
@@ -106,13 +101,10 @@ bool chaser_validate::do_multisig(const hash_digest& digest,
 }
 
 bool chaser_validate::do_threshold(const threshold& batch,
-    const header_link& link, const atomic_counter_ptr& sequence) NOEXCEPT
+    const header_link& link) NOEXCEPT
 {
     threshold_ += batch.tuples.size();
-    const auto id = (*sequence)++;
-    if (is_limited<uint16_t>(id)) return false;
-    const auto group = narrow_cast<uint16_t>(id);
-    const auto set = archive().set_signatures(batch, group, link);
+    const auto set = archive().set_signatures(batch, link);
     if (!set) fault(error::batch8);
     return set;
 }
@@ -133,9 +125,9 @@ signatures chaser_validate::get_capture(const header_link& link) NOEXCEPT
         .log = BIND_THIS(do_log, _1),
         .fire = BIND_THIS(do_fire, _1, _2),
         .ecdsa = BIND_THIS(do_ecdsa, _1, _2, _3, link, sequence),
-        .schnorr = BIND_THIS(do_schnorr, _1, _2, _3, link, sequence),
+        .schnorr = BIND_THIS(do_schnorr, _1, _2, _3, link),
         .multisig = BIND_THIS(do_multisig, _1, _2, _3, link, sequence),
-        .threshold = BIND_THIS(do_threshold, _1, link, sequence)
+        .threshold = BIND_THIS(do_threshold, _1, link)
     };
 }
 
