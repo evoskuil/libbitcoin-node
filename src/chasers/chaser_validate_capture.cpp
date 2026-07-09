@@ -94,8 +94,6 @@ bool chaser_validate::do_multisig(const hash_digest& digest,
     const ec_compresseds& points, const ec_signatures& signs,
     const header_link& link, const atomic_counter_ptr& sequence) NOEXCEPT
 {
-    BC_ASSERT(points.size() == signs.size());
-
     multisig_ += points.size();
     const auto id = (*sequence)++;
     if (is_limited<uint16_t>(id)) return false;
