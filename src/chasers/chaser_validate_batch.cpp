@@ -58,7 +58,7 @@ code chaser_validate::start_batch() NOEXCEPT
     return do_process_batch(true);
 }
 
-// Shutdown drains batched_ to block prevalid states, recovered on startup.
+// Shutdown drains batched_ to prevalid table, which is recovered on startup.
 // Snapshot restoration purges batch backlog as the tables are not append-only.
 void chaser_validate::close_batch() NOEXCEPT
 {
@@ -130,7 +130,7 @@ void chaser_validate::process_batch(bool residual) NOEXCEPT
     }
     // ========================================================================
 
-    // Log outside of lock, oand nly when batch executes (non-verbose).
+    // Log outside of lock, and only when batch executes (non-verbose).
     log_captures();
 }
 

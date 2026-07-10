@@ -88,7 +88,8 @@ bool chaser_validate::do_schnorr(const hash_digest& digest,
 }
 
 bool chaser_validate::do_multisig(const hash_digest& digest,
-    const ec_compresseds& points, const ec_signatures& signs,
+    const std::span<const system::ec_compressed>& points,
+    const std::span<const system::ec_signature>& signs,
     const header_link& link, const atomic_counter_ptr& sequence) NOEXCEPT
 {
     multisig_ += points.size();
@@ -100,13 +101,32 @@ bool chaser_validate::do_multisig(const hash_digest& digest,
     return set;
 }
 
-bool chaser_validate::do_threshold(const threshold& batch,
-    const header_link& link) NOEXCEPT
+bool chaser_validate::do_threshold(const hash_digest& digest,
+    const ec_xonly& point, const ec_signature& sign,
+    const schnorr_link_ptr& fk_ptr, const header_link& link) NOEXCEPT
 {
-    threshold_ += batch.tuples.size();
-    const auto set = archive().set_signatures(batch, link);
+    auto set = archive().set_signature((*fk_ptr)++, digest, point, sign, link);
     if (!set) fault(error::batch8);
     return set;
+}
+
+chaser_validate::cursor chaser_validate::open_threshold(size_t rows,
+    const header_link& link) NOEXCEPT
+{
+    auto& query = archive();
+    const auto scope = to_shared(query.get_transactor());
+    auto first = query.allocate_signatures(rows);
+    auto fk = emplace_shared<schnorr_link>(first);
+    if (fk->is_terminal())
+        return {};
+
+    threshold_ += rows;
+    return
+    {
+        .put = BIND_THIS(do_threshold, _1, _2, _3, fk, link),
+        .done = [scope]() NOEXCEPT {},
+        .rows = rows
+    };
 }
 
 // Capture helpers.
@@ -127,7 +147,7 @@ signatures chaser_validate::get_capture(const header_link& link) NOEXCEPT
         .ecdsa = BIND_THIS(do_ecdsa, _1, _2, _3, link, sequence),
         .schnorr = BIND_THIS(do_schnorr, _1, _2, _3, link),
         .multisig = BIND_THIS(do_multisig, _1, _2, _3, link, sequence),
-        .threshold = BIND_THIS(do_threshold, _1, link)
+        .threshold = BIND_THIS(open_threshold, _1, link)
     };
 }
 

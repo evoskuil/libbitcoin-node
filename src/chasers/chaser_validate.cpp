@@ -233,8 +233,7 @@ void chaser_validate::post_block(const header_link& link,
 
 // May be either concurrent or stranded.
 void chaser_validate::complete_block(const code& ec, const header_link& link,
-    size_t height, bool bypass, bool batched, bool faulted,
-    bool capturing) NOEXCEPT
+    size_t height, bool bypass, bool batched, bool capturing) NOEXCEPT
 {
     // Not stranded when called from validate_block.
     if (is_zero(validate_backlog_.load()) && !stranded())
@@ -267,8 +266,7 @@ void chaser_validate::complete_block(const code& ec, const header_link& link,
     // Batch jobs (all posting from unstranded).
     // ------------------------------------------------------------------------
 
-    // Faulted implies disk full prevented threshold batch writes.
-    if (closed() || !batch_enabled_ || faulted)
+    if (closed() || !batch_enabled_)
         return;
 
     // Queue block and process batch if ready.
