@@ -113,10 +113,8 @@ bool chaser_validate::do_threshold(const hash_digest& digest,
 chaser_validate::cursor chaser_validate::open_threshold(size_t rows,
     const header_link& link) NOEXCEPT
 {
-    auto& query = archive();
-    const auto scope = to_shared(query.get_transactor());
-    auto first = query.allocate_signatures(rows);
-    auto fk = emplace_shared<schnorr_link>(first);
+    auto first = archive().allocate_signatures(rows);
+    const auto fk = emplace_shared<schnorr_link>(first);
     if (fk->is_terminal())
         return {};
 
@@ -124,7 +122,6 @@ chaser_validate::cursor chaser_validate::open_threshold(size_t rows,
     return
     {
         .put = BIND_THIS(do_threshold, _1, _2, _3, fk, link),
-        .done = [scope]() NOEXCEPT {},
         .rows = rows
     };
 }
