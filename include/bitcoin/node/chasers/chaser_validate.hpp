@@ -67,14 +67,14 @@ protected:
     /// Validation.
     virtual void post_block(const header_link& link, bool bypass) NOEXCEPT;
     virtual void validate_block(const header_link& link, bool bypass) NOEXCEPT;
-    virtual code validate(bool& batched, bool& faulted, bool& capturing,
-        bool bypass, const system::chain::block& block,
-        const header_link& link, const system::chain::context& ctx) NOEXCEPT;
+    virtual code validate(bool& batched, bool& capturing, bool bypass,
+        const system::chain::block& block, const header_link& link,
+        const system::chain::context& ctx) NOEXCEPT;
     virtual code populate(bool bypass, const system::chain::block& block,
         const system::chain::context& ctx) NOEXCEPT;
     virtual void complete_block(const code& ec, const header_link& link,
         size_t height, bool bypass, bool batched=false,
-        bool faulted=false, bool capturing=false) NOEXCEPT;
+        bool capturing=false) NOEXCEPT;
     virtual void notify_block(const code& ec, size_t height,
         const header_link& link, bool bypass, bool startup=false) NOEXCEPT;
 
@@ -94,9 +94,11 @@ protected:
 
 private:
     static constexpr auto relaxed = std::memory_order_relaxed;
+    using schnorr_link = database::schnorr_link;
+    using schnorr_link_ptr = std::shared_ptr<schnorr_link>;
     using atomic_counter = std::atomic<size_t>;
     using atomic_counter_ptr = std::shared_ptr<atomic_counter>;
-    using threshold = system::chain::threshold;
+    using cursor = system::chain::threshold::cursor;
     using missed = signatures::miss;
 
     // Capture handlers.
@@ -109,11 +111,13 @@ private:
         const system::ec_xonly& point, const system::ec_signature& sign,
         const header_link& link) NOEXCEPT;
     bool do_multisig(const system::hash_digest& digest,
-        const system::ec_compresseds& points,
-        const system::ec_signatures& signs, const header_link& link,
-        const atomic_counter_ptr& sequence) NOEXCEPT;
-    bool do_threshold(const threshold& batch,
-        const header_link& link) NOEXCEPT;
+        const std::span<const system::ec_compressed>& points,
+        const std::span<const system::ec_signature>& signs,
+        const header_link& link, const atomic_counter_ptr& sequence) NOEXCEPT;
+    bool do_threshold(const system::hash_digest& digest,
+        const system::ec_xonly& point, const system::ec_signature& sign,
+        const schnorr_link_ptr& fk_ptr, const header_link& link) NOEXCEPT;
+    cursor open_threshold(size_t rows, const header_link& link) NOEXCEPT;
 
     // Capture helpers.
     signatures get_capture(const header_link& link) NOEXCEPT;

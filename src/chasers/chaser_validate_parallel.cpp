@@ -38,7 +38,7 @@ void chaser_validate::validate_block(const header_link& link,
 
     code ec{};
     chain::context ctx{};
-    bool batched{}, faulted{}, capturing{};
+    bool batched{}, capturing{};
     auto& query = archive();
 
     // TODO: implement allocator parameter resulting in full allocation to
@@ -58,7 +58,7 @@ void chaser_validate::validate_block(const header_link& link,
         if (!query.set_block_unconfirmable(link))
             ec = error::validate4;
     }
-    else if ((ec = validate(batched, faulted, capturing, bypass, *block, link,
+    else if ((ec = validate(batched, capturing, bypass, *block, link,
         ctx)))
     {
         if (!query.set_block_unconfirmable(link))
@@ -66,7 +66,7 @@ void chaser_validate::validate_block(const header_link& link,
     }
 
     --validate_backlog_;
-    complete_block(ec, link, ctx.height, bypass, batched, faulted, capturing);
+    complete_block(ec, link, ctx.height, bypass, batched, capturing);
 }
 
 // helpers
@@ -99,8 +99,8 @@ code chaser_validate::populate(bool bypass, const chain::block& block,
     return error::success;
 }
 
-code chaser_validate::validate(bool& batched, bool& faulted, bool& capturing,
-    bool bypass, const chain::block& block, const header_link& link,
+code chaser_validate::validate(bool& batched, bool& capturing, bool bypass,
+    const chain::block& block, const header_link& link,
     const chain::context& ctx) NOEXCEPT
 {
     auto& query = archive();
@@ -127,36 +127,29 @@ code chaser_validate::validate(bool& batched, bool& faulted, bool& capturing,
             if (capturing) lock.lock();
 
             // Sequentially connect block with signature capture (if enabled).
-            // There is not stop during connect, so shutdown will wait on the
-            // completion (block consistency) of all signature captures. But
-            // the faulted state of batch is not persisted (because disk full).
+            // There is no stop during connect, so shutdown will wait on the
+            // completion (block consistency) of all signature captures.
             if ((ec = block.connect(ctx, capture)))
                 return ec;
 
             // At least one signature batch was attempted (defer completion).
             batched = capture.batched;
-
-            // Threshold batch commit failed, block otherwise passed (retry).
-            faulted = capture.faulted;
         }
-        // ================================================================
+        // ====================================================================
 
         // Prevouts optimize confirmation.
-        // Block will be retried if batch is faulted.
-        if (!faulted && !query.set_prevouts(link, block))
+        if (!query.set_prevouts(link, block))
             return error::validate6;
     }
 
-    // Block will be retried if batch is faulted.
-    if (!faulted && !query.set_filter_body(link, block))
+    if (!query.set_filter_body(link, block))
         return error::validate7;
 
-    // Block will be retried if batch is faulted.
-    if (!faulted && (ctx.height >= silent_start_height_) &&
+    if ((ctx.height >= silent_start_height_) &&
         !query.set_silent(link, block))
         return error::validate8;
 
-    // Defer block state change when batched (or faulted).
+    // Defer block state change when batched.
     // Valid must be set after set_prevouts, set_filter_body, and set_silent.
     if (!batched && !bypass && !query.set_block_valid(link))
         return error::validate9;
