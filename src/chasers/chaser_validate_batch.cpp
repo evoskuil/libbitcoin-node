@@ -59,7 +59,7 @@ code chaser_validate::start_batch() NOEXCEPT
 }
 
 // Shutdown drains batched_ to prevalid table, which is recovered on startup.
-// Snapshot restoration purges batch backlog as the tables are not append-only.
+// Snapshot restoration purges sigs and prevalids as these are not append-only.
 void chaser_validate::close_batch() NOEXCEPT
 {
     BC_ASSERT(stranded());
