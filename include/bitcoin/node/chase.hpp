@@ -115,9 +115,9 @@ enum class chase
     /// Accept/Connect.
     /// -----------------------------------------------------------------------
 
-    /// A branch has become provisionally valid, download unblocked (height_t).
-    /// Issued by 'validate' and handled by 'check'.
-    prevalid,
+    /////// A branch has become provisionally valid, download unblocked (height_t).
+    /////// Issued by 'validate' and handled by 'check'.
+    ////prevalid,
 
     /// A branch has become valid (height_t).
     /// Issued by 'validate' and handled by 'check', 'confirm', 'snapshot'.
