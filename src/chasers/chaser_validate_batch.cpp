@@ -239,6 +239,7 @@ bool chaser_validate::mark_valids(bool startup) NOEXCEPT
     std::atomic_bool fault{};
     constexpr auto parallel = poolstl::execution::par;
 
+    // Allow valids to drain when closed.
     std::for_each(parallel, batched_.cbegin(), batched_.cend(),
         [&](auto link) NOEXCEPT
     {

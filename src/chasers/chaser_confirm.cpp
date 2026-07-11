@@ -188,7 +188,7 @@ void chaser_confirm::reorganize(header_states& fork, size_t top,
     const auto& query = archive();
     header_links popped{};
 
-    while (top > fork_point)
+    while (top > fork_point && !closed())
     {
         const auto link = query.to_confirmed(top);
         if (link.is_terminal())
@@ -223,6 +223,9 @@ void chaser_confirm::organize(header_states& fork, const header_links& popped,
     // Continue when suspended as write error terminates synchronous loop.
     for (const auto& state: fork)
     {
+        if (closed())
+            return;
+
         switch (state.ec.value())
         {
             case database::error::bypassed:
