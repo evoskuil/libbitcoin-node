@@ -268,7 +268,7 @@ bool chaser_validate::mark_valids(bool startup) NOEXCEPT
 bool chaser_validate::is_residual() NOEXCEPT
 {
     // Verify residuals when recent or window is fully archived.
-    return (maximum_posted_.load() || window_archived_.load(relaxed)) &&
+    return (maximum_posted_.load() || window_archived_.load()) &&
         is_zero(batch_backlog_.load()) &&
         is_zero(validate_backlog_.load());
 }

@@ -75,7 +75,7 @@ bool chaser_validate::handle_chase(const code&, chase event_,
     // Because in-flight blocks are lost, reset position when backlog clears.
     if (event_ == chase::unfull)
     {
-        recovering_.store(true);
+        disk_recovering_.store(true);
         return true;
     }
 
@@ -155,9 +155,9 @@ void chaser_validate::do_bump(height_t) NOEXCEPT
 {
     BC_ASSERT(stranded());
 
-    if (recovering_.load() && is_zero(validate_backlog_.load()))
+    if (disk_recovering_.load() && is_zero(validate_backlog_.load()))
     {
-        recovering_.store(false);
+        disk_recovering_.store(false);
         set_position(archive().get_fork());
     }
 

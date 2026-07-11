@@ -149,16 +149,17 @@ private:
     network::threadpool validation_threadpool_;
 
     // These are thread safe.
-    stopper stopping_{};
-    counters counters_{};
+    network::asio::strand validation_strand_;
     std::shared_mutex mutex_{};
     atomic_counter batch_backlog_{};
     atomic_counter validate_backlog_{};
+    std::atomic_bool disk_recovering_{};
     std::atomic_bool window_archived_{};
     std::atomic_bool maximum_posted_{};
-    std::atomic_bool recovering_{};
+    counters counters_{};
+    stopper stopping_{};
 
-    network::asio::strand validation_strand_;
+    // These are thread safe.
     const uint32_t subsidy_interval_;
     const uint64_t initial_subsidy_;
     const size_t silent_start_height_;
