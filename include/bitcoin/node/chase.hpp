@@ -112,6 +112,10 @@ enum class chase
     /// Issued by 'block_in_31800' and handled by 'organize'.
     unchecked,
 
+    /// A downloaded window is completed by check (height_t).
+    /// Issued by 'check' and handled by 'validate'.
+    windowed,
+
     /// Accept/Connect.
     /// -----------------------------------------------------------------------
 

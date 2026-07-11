@@ -391,7 +391,13 @@ void chaser_check::do_bump(height_t) NOEXCEPT
     // TODO: query.is_associated() is expensive (hashmap search).
     // Skip checked blocks starting immediately after last checked.
     while (!closed() && query.is_associated(query.to_candidate(++height)))
+    {
         set_position(height);
+
+        // Notify validator that no more blocks are coming.
+        if (height == requested_)
+            notify(error::success, chase::windowed, height);
+    }
 
     do_headers({});
 }
