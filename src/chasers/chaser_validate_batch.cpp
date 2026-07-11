@@ -75,8 +75,7 @@ void chaser_validate::close_batch() NOEXCEPT
 
 // batched_ is redundant with the combined set of ecdsa/schnorr unfailed block
 // identifiers stored in the two batch tables, so just a sort optimization.
-void chaser_validate::push_batch(const header_link& link,
-    size_t height) NOEXCEPT
+void chaser_validate::push_batch(const header_link& link) NOEXCEPT
 {
     BC_ASSERT(stranded());
 
@@ -89,9 +88,6 @@ void chaser_validate::push_batch(const header_link& link,
         close_batch();
         return;
     }
-
-    // Unblocks check chaser for download while verifying.
-    ////notify({}, chase::prevalid, possible_wide_cast<height_t>(height));
 
     // Process both tables when one hits target, allowing batched_ clearance
     // and therefore forward confirmation progress. Drain batch if no backlogs

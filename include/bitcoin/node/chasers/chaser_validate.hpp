@@ -81,7 +81,7 @@ protected:
     /// Batching.
     virtual code start_batch() NOEXCEPT;
     virtual void close_batch() NOEXCEPT;
-    virtual void push_batch(const header_link& link, size_t height) NOEXCEPT;
+    virtual void push_batch(const header_link& link) NOEXCEPT;
     virtual void process_batch(bool residual) NOEXCEPT;
     virtual code do_process_batch(bool startup) NOEXCEPT;
     virtual bool mark_valids(bool startup) NOEXCEPT;
@@ -107,7 +107,6 @@ private:
         atomic_counter missed_threshold_{};
     };
 
-    static constexpr auto relaxed = std::memory_order_relaxed;
     using schnorr_link = database::schnorr_link;
     using schnorr_link_ptr = std::shared_ptr<schnorr_link>;
     using cursor = system::chain::threshold::cursor;

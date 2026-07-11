@@ -282,7 +282,7 @@ void chaser_validate::complete_block(const code& ec, const header_link& link,
     if (batched)
     {
         ++batch_backlog_;
-        POST(push_batch, link, height);
+        POST(push_batch, link);
         return;
     }
 
