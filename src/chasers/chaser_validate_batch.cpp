@@ -271,10 +271,18 @@ bool chaser_validate::is_residual() NOEXCEPT
 
 bool chaser_validate::is_mature(bool residual) NOEXCEPT
 {
-    // Verify non-residuals when mature.
+    const auto& query = archive();
+    const auto ecdsa = query.ecdsa_records();
+    const auto schnorr = query.schnorr_records();
+
+    // Nothing to verify and no residuals to release.
+    if (is_zero(ecdsa) && is_zero(schnorr) && batched_.empty())
+        return false;
+
+    // Verify residuals whenever, and non-residuals when mature.
     return residual ||
-        (archive().ecdsa_records() >= batch_target_) ||
-        (archive().schnorr_records() >= batch_target_);
+        (ecdsa >= batch_target_) ||
+        (schnorr >= batch_target_);
 }
 
 std::string chaser_validate::log_rate(const std::string& name,
