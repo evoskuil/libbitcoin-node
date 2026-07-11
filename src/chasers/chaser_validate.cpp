@@ -79,7 +79,8 @@ bool chaser_validate::handle_chase(const code&, chase event_,
         return true;
     }
 
-    // Record durable state before the suspension gate.
+    // Record durable state before the suspension gate. A consequence is that
+    // recovery with window_archived_ drains small batches until next checked.
     if (event_ == chase::windowed)
         window_archived_.store(true);
     else if (event_ == chase::checked)
