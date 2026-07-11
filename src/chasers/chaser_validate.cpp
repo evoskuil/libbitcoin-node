@@ -96,8 +96,17 @@ bool chaser_validate::handle_chase(const code&, chase event_,
         case chase::checked:
         {
             // value is checked block height.
+            window_archived_.store(false);
             BC_ASSERT(std::holds_alternative<height_t>(value));
             POST(do_checked, std::get<height_t>(value));
+            break;
+        }
+        case chase::windowed:
+        {
+            // value is last height in window.
+            window_archived_.store(true);
+            BC_ASSERT(std::holds_alternative<height_t>(value));
+            POST(process_batch, is_residual());
             break;
         }
         case chase::regressed:

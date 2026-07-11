@@ -154,6 +154,7 @@ private:
     std::shared_mutex mutex_{};
     atomic_counter batch_backlog_{};
     atomic_counter validate_backlog_{};
+    std::atomic_bool window_archived_{};
     std::atomic_bool maximum_posted_{};
     std::atomic_bool recovering_{};
 
