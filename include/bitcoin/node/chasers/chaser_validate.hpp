@@ -93,11 +93,23 @@ protected:
     bool stranded() const NOEXCEPT override;
 
 private:
+    using atomic_counter = std::atomic<size_t>;
+    using atomic_counter_ptr = std::shared_ptr<atomic_counter>;
+    struct counters
+    {
+        atomic_counter ecdsa_{};
+        atomic_counter schnorr_{};
+        atomic_counter multisig_{};
+        atomic_counter threshold_{};
+        atomic_counter missed_ecdsa_{};
+        atomic_counter missed_schnorr_{};
+        atomic_counter missed_multisig_{};
+        atomic_counter missed_threshold_{};
+    };
+
     static constexpr auto relaxed = std::memory_order_relaxed;
     using schnorr_link = database::schnorr_link;
     using schnorr_link_ptr = std::shared_ptr<schnorr_link>;
-    using atomic_counter = std::atomic<size_t>;
-    using atomic_counter_ptr = std::shared_ptr<atomic_counter>;
     using cursor = system::chain::threshold::cursor;
     using missed = signatures::miss;
 
@@ -138,17 +150,10 @@ private:
 
     // These are thread safe.
     stopper stopping_{};
+    counters counters_{};
     std::shared_mutex mutex_{};
-    std::atomic<size_t> ecdsa_{};
-    std::atomic<size_t> schnorr_{};
-    std::atomic<size_t> multisig_{};
-    std::atomic<size_t> threshold_{};
-    std::atomic<size_t> missed_ecdsa_{};
-    std::atomic<size_t> missed_schnorr_{};
-    std::atomic<size_t> missed_multisig_{};
-    std::atomic<size_t> missed_threshold_{};
-    std::atomic<size_t> validate_backlog_{};
-    std::atomic<size_t> batch_backlog_{};
+    atomic_counter batch_backlog_{};
+    atomic_counter validate_backlog_{};
     std::atomic_bool maximum_posted_{};
     std::atomic_bool recovering_{};
 

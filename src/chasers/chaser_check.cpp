@@ -88,6 +88,9 @@ map_ptr chaser_check::split(const map_ptr& map) NOEXCEPT
 // start/stop
 // ----------------------------------------------------------------------------
 
+// `position` tracks the contiguous chain of associated candidate blocks.
+// `requested` tracks the last height of the current download window.
+// `advanced` tracks `requested` less window blocks not yet validated.
 code chaser_check::start() NOEXCEPT
 {
     start_tracking();
@@ -360,7 +363,6 @@ void chaser_check::do_advanced(height_t) NOEXCEPT
     BC_ASSERT(stranded());
 
     // Validations are not ordered, so accumulate vs. compare height.
-    // Advancement through window is a quantity, not dedicated to a branch.
     ++advanced_;
 
     // The full count of requested hashes has been validated.
@@ -484,21 +486,25 @@ size_t chaser_check::set_unassociated() NOEXCEPT
     if (closed() || purging())
         return {};
 
-    // Defer new work issuance until gaps filled and validation caught up.
-    if (position() < requested_ || advanced_ < requested_)
+    // Defer new work issuance until gaps filled.
+    if (position() < requested_)
+        return {};
+
+    // Defer new work until validation caught up to request.
+    if (advanced_ < requested_)
         return {};
 
     // Inventory size gets set only once.
     if (is_zero(inventory_))
         if (is_zero((inventory_ = get_inventory_size())))
-            return zero;
+            return {};
 
     // Due to previous downloads, validation can race ahead of last request.
     // The last request (requested_) stops at the last gap in the window, but
     // validation continues until the next gap. Start next scan above validated
     // not last requested, since all between are already downloaded.
     const auto& query = archive();
-    const auto requested = requested_;
+    const auto previous = requested_;
     const auto step = ceilinged_add(position(), maximum_concurrency_);
     const auto stop = std::min(step, maximum_height_);
     size_t count{};
@@ -518,7 +524,7 @@ size_t chaser_check::set_unassociated() NOEXCEPT
 
     LOGN("Advance by ("
         << maximum_concurrency_ << ") above ("
-        << requested << ") from ("
+        << previous << ") from ("
         << position() << ") stop ("
         << stop << ") found ("
         << count << ") last ("
@@ -530,7 +536,7 @@ size_t chaser_check::set_unassociated() NOEXCEPT
 size_t chaser_check::get_inventory_size() const NOEXCEPT
 {
     if (is_zero(connections_) || !is_current_chain(false))
-        return zero;
+        return {};
 
     const auto& query = archive();
     const auto fork = query.get_fork();

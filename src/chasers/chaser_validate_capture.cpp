@@ -52,13 +52,13 @@ void chaser_validate::do_fire(missed miss, size_t count) NOEXCEPT
     switch (miss)
     {
         case missed::ecdsa:
-            missed_ecdsa_ += count;
+            counters_.missed_ecdsa_ += count;
             break;
         case missed::multisig:
-            missed_multisig_ += count;
+            counters_.missed_multisig_ += count;
             break;
         case missed::schnorr:
-            missed_schnorr_ += count;
+            counters_.missed_schnorr_ += count;
             break;
         default:;
     }
@@ -68,7 +68,7 @@ bool chaser_validate::do_ecdsa(const hash_digest& digest,
     const ec_compressed& point, const ec_signature& sign,
     const header_link& link, const atomic_counter_ptr& sequence) NOEXCEPT
 {
-    ++ecdsa_;
+    ++counters_.ecdsa_;
     const auto id = (*sequence)++;
     if (is_limited<uint16_t>(id)) return false;
     const auto group = narrow_cast<uint16_t>(id);
@@ -81,7 +81,7 @@ bool chaser_validate::do_schnorr(const hash_digest& digest,
     const ec_xonly& point, const ec_signature& sign,
     const header_link& link) NOEXCEPT
 {
-    ++schnorr_;
+    ++counters_.schnorr_;
     const auto set = archive().set_signature(digest, point, sign, link);
     if (!set) fault(error::batch6);
     return set;
@@ -92,7 +92,7 @@ bool chaser_validate::do_multisig(const hash_digest& digest,
     const std::span<const system::ec_signature>& signs,
     const header_link& link, const atomic_counter_ptr& sequence) NOEXCEPT
 {
-    multisig_ += points.size();
+    counters_.multisig_ += points.size();
     const auto id = (*sequence)++;
     if (is_limited<uint16_t>(id)) return false;
     const auto group = narrow_cast<uint16_t>(id);
@@ -118,7 +118,7 @@ chaser_validate::cursor chaser_validate::open_threshold(size_t rows,
     if (fk->is_terminal())
         return {};
 
-    threshold_ += rows;
+    counters_.threshold_ += rows;
     return
     {
         .put = BIND_THIS(do_threshold, _1, _2, _3, fk, link),
@@ -161,10 +161,14 @@ std::string chaser_validate::log_ratio(const std::string& name,
 
 void chaser_validate::log_captures() const NOEXCEPT
 {
-    LOGN(log_ratio("Capture ecdsa.... ", ecdsa_,     ecdsa_     + missed_ecdsa_));
-    LOGN(log_ratio("Capture multisig. ", multisig_,  multisig_  + missed_multisig_));
-    LOGN(log_ratio("Capture schnorr.. ", schnorr_,   schnorr_   + missed_schnorr_));
-    LOGN(log_ratio("Capture threshold ", threshold_, threshold_ + zero));
+    LOGN(log_ratio("Capture ecdsa.... ", counters_.ecdsa_,
+        counters_.ecdsa_     + counters_.missed_ecdsa_));
+    LOGN(log_ratio("Capture multisig. ", counters_.multisig_,
+        counters_.multisig_  + counters_.missed_multisig_));
+    LOGN(log_ratio("Capture schnorr.. ", counters_.schnorr_,
+        counters_.schnorr_   + counters_.missed_schnorr_));
+    LOGN(log_ratio("Capture threshold ", counters_.threshold_,
+        counters_.threshold_ + zero));
 }
 
 BC_POP_WARNING()
