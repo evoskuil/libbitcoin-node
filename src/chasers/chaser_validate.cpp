@@ -79,6 +79,12 @@ bool chaser_validate::handle_chase(const code&, chase event_,
         return true;
     }
 
+    // Record durable state before the suspension gate.
+    if (event_ == chase::windowed)
+        window_archived_.store(true);
+    else if (event_ == chase::checked)
+        window_archived_.store(false);
+
     // Stop generating query during suspension.
     // Incoming events may already be flushed to the strand at this point.
     if (suspended())
@@ -86,17 +92,21 @@ bool chaser_validate::handle_chase(const code&, chase event_,
 
     switch (event_)
     {
-        case chase::resume:
         case chase::start:
         case chase::bump:
         {
             POST(do_bump, height_t{});
             break;
         }
+        case chase::resume:
+        {
+            POST(process_batch, is_residual());
+            POST(do_bump, height_t{});
+            break;
+        }
         case chase::checked:
         {
             // value is checked block height.
-            window_archived_.store(false);
             BC_ASSERT(std::holds_alternative<height_t>(value));
             POST(do_checked, std::get<height_t>(value));
             break;
@@ -104,7 +114,6 @@ bool chaser_validate::handle_chase(const code&, chase event_,
         case chase::windowed:
         {
             // value is last height in window.
-            window_archived_.store(true);
             BC_ASSERT(std::holds_alternative<height_t>(value));
             POST(process_batch, is_residual());
             break;
