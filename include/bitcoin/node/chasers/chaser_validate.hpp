@@ -20,7 +20,6 @@
 #define LIBBITCOIN_NODE_CHASERS_CHASER_VALIDATE_HPP
 
 #include <atomic>
-#include <mutex>
 #include <bitcoin/node/chasers/chaser.hpp>
 #include <bitcoin/node/define.hpp>
 
@@ -78,15 +77,19 @@ protected:
     virtual void notify_block(const code& ec, size_t height,
         const header_link& link, bool bypass, bool startup=false) NOEXCEPT;
 
-    /// Batching.
+    /// Batching (lock-free, self-serviced by completing pool threads).
+    /// Batch state is the store: sig tables carry rows, prevalid table
+    /// carries the per-block link set (write-through, crash-durable).
     virtual code start_batch() NOEXCEPT;
-    virtual void close_batch() NOEXCEPT;
-    virtual void push_batch(const header_link& link) NOEXCEPT;
     virtual void process_batch(bool residual) NOEXCEPT;
     virtual code do_process_batch(bool startup) NOEXCEPT;
-    virtual bool mark_valids(bool startup) NOEXCEPT;
-    virtual bool mark_invalids(const header_links& invalids,
-        bool startup) NOEXCEPT;
+    virtual bool mark_valids(header_links& prevalids, bool startup) NOEXCEPT;
+    virtual bool mark_invalids(header_links& prevalids,
+        const header_links& invalids, bool startup) NOEXCEPT;
+
+    /// Turnstile (drain/capture exclusion without blocking writers).
+    virtual bool enter_capture() NOEXCEPT;
+    virtual void exit_capture() NOEXCEPT;
 
     // Override base class strand because it sits on the network thread pool.
     network::asio::strand& strand() NOEXCEPT override;
@@ -139,22 +142,20 @@ private:
     // Batching helpers.
     bool is_residual() NOEXCEPT;
     bool is_mature(bool residual) NOEXCEPT;
-    std::string log_rate(const std::string& name, size_t numerator,
-        size_t denominator) const NOEXCEPT;
+    std::string log_rate(const std::string& name, size_t signatures,
+        size_t milliseconds) const NOEXCEPT;
 
-    // These are protected by strand.
-    header_links batched_{};
-    header_links invalids_{};
+    // This is not thread safe.
     network::threadpool validation_threadpool_;
 
     // These are thread safe.
     network::asio::strand validation_strand_;
-    std::shared_mutex mutex_{};
-    atomic_counter batch_backlog_{};
     atomic_counter validate_backlog_{};
     std::atomic_bool disk_recovering_{};
     std::atomic_bool window_archived_{};
     std::atomic_bool maximum_posted_{};
+    std::atomic_bool draining_{};
+    atomic_counter writers_{};
     counters counters_{};
     stopper stopping_{};
 

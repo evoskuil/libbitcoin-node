@@ -114,45 +114,50 @@ code chaser_validate::validate(bool& batched, bool& capturing, bool bypass,
         if ((ec = block.accept(ctx, subsidy_interval_, initial_subsidy_)))
             return ec;
 
-        // Initialize block capture.
-        const auto capture = get_capture(link);
-
-        // Signature capture is enabled.
-        capturing = capture.enabled;
-
-        // This critical section is mutually-exclusive with batch verification.
+        // This critical section is mutually-exclusive with batch verification
+        // (turnstile). All batch table state written inside the capture epoch.
         // ====================================================================
-        {
-            std::shared_lock lock{ mutex_, std::defer_lock };
-            if (capturing) lock.lock();
 
-            // Sequentially connect block with signature capture (if enabled).
-            // There is no stop during connect, so shutdown will wait on the
-            // completion (block consistency) of all signature captures.
-            if ((ec = block.connect(ctx, capture)))
-                return ec;
+        // Enter the capture turnstile. If drain is in progress, full validate.
+        const auto entered = enter_capture();
 
-            // At least one signature batch was attempted (defer completion).
-            batched = capture.batched;
-        }
+        // Initialize signature capture.
+        const auto capture = get_capture(entered ? link : header_link{});
+        capturing = entered ? capture.enabled : true;
+
+        ec = block.connect(ctx, capture);
+
+        // At least one signature batch was attempted (batch completion).
+        batched = capture.batched;
+
+        // Mark block as valid contingent on batch verification.
+        if (!ec && batched && !query.set_prevalid(link))
+            ec = error::validate6;
+
+        if (entered)
+            exit_capture();
+
         // ====================================================================
+
+        if (ec)
+            return ec;
 
         // Prevouts optimize confirmation.
         if (!query.set_prevouts(link, block))
-            return error::validate6;
+            return error::validate7;
     }
 
     if (!query.set_filter_body(link, block))
-        return error::validate7;
+        return error::validate8;
 
     if ((ctx.height >= silent_start_height_) &&
         !query.set_silent(link, block))
-        return error::validate8;
+        return error::validate9;
 
     // Defer block state change when batched.
     // Valid must be set after set_prevouts, set_filter_body, and set_silent.
     if (!batched && !bypass && !query.set_block_valid(link))
-        return error::validate9;
+        return error::validate10;
 
     return error::success;
 }

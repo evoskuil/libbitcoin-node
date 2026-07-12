@@ -20,7 +20,7 @@
 
 #include <atomic>
 #include <algorithm>
-#include <mutex>
+#include <thread>
 #include <bitcoin/node/define.hpp>
 
 namespace libbitcoin {
@@ -38,125 +38,96 @@ BC_PUSH_WARNING(NO_THROW_IN_NOEXCEPT)
 // ----------------------------------------------------------------------------
 // protected
 
-// If there was a non-empty batch at startup, process it for invalids and set
-// their states normally, then scan from fork point (position()) to association
-// gap for all prevalids. Iterate over these setting their states to valid.
 code chaser_validate::start_batch() NOEXCEPT
 {
-    BC_ASSERT(batched_.empty());
     if (!batch_enabled_)
         return {};
 
-    auto& query = archive();
-    batched_ = query.get_prevalids();
-    if (!query.purge_prevalids())
-        return error::batch1;
-
-    if (is_zero(query.ecdsa_records()) && is_zero(query.schnorr_records()))
+    const auto& query = archive();
+    if (is_zero(query.prevalid_records()) &&
+        is_zero(query.ecdsa_records()) &&
+        is_zero(query.schnorr_records()))
         return {};
 
     return do_process_batch(true);
 }
 
-// Shutdown drains batched_ to prevalid table, which is recovered on startup.
-// Snapshot restoration purges sigs and prevalids as these are not append-only.
-void chaser_validate::close_batch() NOEXCEPT
-{
-    BC_ASSERT(stranded());
-    BC_ASSERT(closed());
-
-    // Set even if signature batch tables are empty.
-    if (is_zero(batch_backlog_.load()))
-    {
-        archive().set_prevalids(batched_);
-        batched_.clear();
-    }
-}
-
-// batched_ is redundant with the combined set of ecdsa/schnorr unfailed block
-// identifiers stored in the two batch tables, so just a sort optimization.
-void chaser_validate::push_batch(const header_link& link) NOEXCEPT
-{
-    BC_ASSERT(stranded());
-
-    // Accumulate even if closed. Sacrifices stop speed to save validations.
-    batched_.push_back(link);
-    --batch_backlog_;
-
-    if (closed())
-    {
-        close_batch();
-        return;
-    }
-
-    // Process both tables when one hits target, allowing batched_ clearance
-    // and therefore forward confirmation progress. Drain batch if no backlogs
-    // and maximum hash been posted.
-    const auto residual = is_residual();
-    process_batch(residual);
-
-    if (residual)
-        batched_.shrink_to_fit();
-}
-
 void chaser_validate::process_batch(bool residual) NOEXCEPT
 {
-    BC_ASSERT(stranded());
-
-    // Test outside of lock to prevent reader contention for nearly all calls.
+    // Cheap pre-test, retested in critical section.
     if (closed() || !is_mature(residual))
         return;
 
-    // Unique lock prevents batch table updates during evaluation, allowing the
-    // tables to be fully purged upon completion, and ensuring that evaluation
-    // does not operate over partial block records in the batch tables.
-    // ========================================================================
+    // Claim the drain (at most one, losers rely on the winner).
+    if (draining_.exchange(true))
+        return;
+
+    // Wait for captures to complete or abandon on close.
+    while (is_nonzero(writers_.load()))
     {
-        const std::unique_lock lock{ mutex_ };
-
-        // Must retest inside lock as table updates are running concurrently.
-        if (closed() || !is_mature(residual))
-            return;
-
-        if (const auto ec = do_process_batch(false))
+        if (closed())
         {
-            fault(ec);
+            draining_.store(false);
             return;
         }
+
+        std::this_thread::yield();
     }
+
+    // Batch tables are now quiescent (no writers admitted, none in flight).
     // ========================================================================
 
-    // Log outside of lock, and only when batch executes (non-verbose).
+    // Retest under the claim, another drain may have just emptied the tables.
+    if (!is_mature(residual))
+    {
+        draining_.store(false);
+        return;
+    }
+
+    const auto ec = do_process_batch(false);
+    draining_.store(false);
+    if (ec == network::error::operation_canceled)
+        return;
+
+    if (ec)
+    {
+        fault(ec);
+        return;
+    }
+
+    // ========================================================================
+
+    // Log outside of drain claim, and only when batch executes (non-verbose).
     log_captures();
 }
 
+// Guarded by the drain claim (or single-threaded at startup).
 code chaser_validate::do_process_batch(bool startup) NOEXCEPT
 {
     auto& query = archive();
+    auto prevalids = query.get_prevalids();
 
     const auto ecdsa = query.ecdsa_records();
     if (is_nonzero(ecdsa))
     {
         header_links invalids{};
         const auto start = network::logger::now();
-        if (!query.verify_ecdsa_signatures(stopping_, invalids))
-        {
-            LOGN("Batch verify ecdsa canceled (" << ecdsa << ").");
-            return network::error::operation_canceled;
-        }
-
-        const auto end = network::logger::now();
-        const auto elapsed = duration_cast<seconds>(end - start).count();
-        fire(events::ecdsa_secs, elapsed);
+        ////if (!query.verify_ecdsa_signatures(stopping_, invalids))
+        ////{
+        ////    LOGN("Batch verify ecdsa canceled (" << ecdsa << ").");
+        ////    return network::error::operation_canceled;
+        ////}
+        const auto elapsed = network::logger::now() - start;
+        fire(events::ecdsa_secs, duration_cast<seconds>(elapsed).count());
 
         if (!startup)
         {
-            LOGN(log_rate("Batch verify rate ecdsa.... ", ecdsa, elapsed));
+            LOGN(log_rate("Batch verify rate ecdsa.... ", ecdsa,
+                duration_cast<milliseconds>(elapsed).count()));
         }
 
-        if (!mark_invalids(invalids, startup) ||
-            !query.purge_ecdsa_signatures())
-            return error::batch2;
+        if (!mark_invalids(prevalids, invalids, startup))
+            return error::batch1;
     }
 
     const auto schnorr = query.schnorr_records();
@@ -164,42 +135,37 @@ code chaser_validate::do_process_batch(bool startup) NOEXCEPT
     {
         header_links invalids{};
         const auto start = network::logger::now();
-        if (!query.verify_schnorr_signatures(stopping_, invalids))
-        {
-            LOGN("Batch verify schnorr canceled (" << schnorr << ").");
-            return network::error::operation_canceled;
-        }
-
-        const auto end = network::logger::now();
-        const auto elapsed = duration_cast<seconds>(end - start).count();
-        fire(events::schnorr_secs, elapsed);
+        ////if (!query.verify_schnorr_signatures(stopping_, invalids))
+        ////{
+        ////    LOGN("Batch verify schnorr canceled (" << schnorr << ").");
+        ////    return network::error::operation_canceled;
+        ////}
+        const auto elapsed = network::logger::now() - start;
+        fire(events::schnorr_secs, duration_cast<seconds>(elapsed).count());
 
         if (!startup)
         {
-            LOGN(log_rate("Batch verify rate schnorr.. ", schnorr, elapsed));
+            LOGN(log_rate("Batch verify rate schnorr.. ", schnorr, 
+                duration_cast<milliseconds>(elapsed).count()));
         }
 
-        if (!mark_invalids(invalids, startup) ||
-            !query.purge_schnorr_signatures())
-            return error::batch3;
+        if (!mark_invalids(prevalids, invalids, startup))
+            return error::batch2;
     }
 
-    return mark_valids(startup) ? error::success : error::batch4;
+    if (!mark_valids(prevalids, startup))
+        return error::batch3;
+
+    // Purge prevalids before signatures.
+    return query.purge_prevalids() &&
+        query.purge_ecdsa_signatures() &&
+        query.purge_schnorr_signatures() ?
+        error::success : error::batch4;
 }
 
-// Invalids might not be included in batched, as link push is a race.
-// Collected links are only required to set valid, not invalid, and do not
-// need to coincide with the batch that is currently being processed (!).
-// A batched_ value may not be present in the current batched_ set despite
-// being invalid here, which is expected. However upon invalidation and failure
-// to match here, this block id will subsequently land in batched_ and would
-// then be reported as valid, overriding the unconfirmable block state set
-// below, so invalids_ are cached for process lifetime.
-bool chaser_validate::mark_invalids(const header_links& invalids,
-    bool startup) NOEXCEPT
+bool chaser_validate::mark_invalids(header_links& prevalids,
+    const header_links& invalids, bool startup) NOEXCEPT
 {
-    BC_ASSERT(stranded());
-
     auto& query = archive();
     for (const auto& link: invalids)
     {
@@ -208,38 +174,36 @@ bool chaser_validate::mark_invalids(const header_links& invalids,
             !query.set_block_unconfirmable(link))
             return false;
 
-        invalids_.push_back(link);
         const auto ec = system::error::invalid_signature;
         notify_block(ec, height, link, false, startup);
     }
 
-    // Set all invalid links in batched_ to terminal (to be skipped).
-    if (!invalids_.empty())
+    // Exclude invalid links from marking, invalids is almost always empty.
+    if (!invalids.empty())
     {
-        std::ranges::replace_if(batched_, [&](const auto& link) NOEXCEPT
+        std::ranges::replace_if(prevalids, [&](const header_link& link) NOEXCEPT
         {
-            return contains(invalids_, link);
+            return contains(invalids, link);
         }, header_link::terminal);
     }
 
     return true;
 }
 
-// Set all batched blocks that aren't invalid to valid.
+// Set all prevalid blocks that aren't invalid to valid.
 // May be ancestors of invalid, in which case they are also unconfirmable.
-bool chaser_validate::mark_valids(bool startup) NOEXCEPT
+bool chaser_validate::mark_valids(header_links& prevalids,
+    bool startup) NOEXCEPT
 {
-    BC_ASSERT(stranded());
-
     auto& query = archive();
     std::atomic_bool fault{};
     constexpr auto parallel = poolstl::execution::par;
 
     // Allow valids to drain when closed.
-    std::for_each(parallel, batched_.cbegin(), batched_.cend(),
+    std::for_each(parallel, prevalids.cbegin(), prevalids.cend(),
         [&](auto link) NOEXCEPT
     {
-        // terminal links are previously set invalid (to be skipped).
+        // Terminal links are those flagged as invalid (to be skipped).
         if (link == header_link::terminal)
             return;
 
@@ -253,7 +217,6 @@ bool chaser_validate::mark_valids(bool startup) NOEXCEPT
         notify_block(system::error::success, height, link, false, startup);
     });
 
-    batched_.clear();
     return !fault.load();
 }
 
@@ -265,7 +228,6 @@ bool chaser_validate::is_residual() NOEXCEPT
 {
     // Verify residuals when recent or window is fully archived.
     return (maximum_posted_.load() || window_archived_.load()) &&
-        is_zero(batch_backlog_.load()) &&
         is_zero(validate_backlog_.load());
 }
 
@@ -275,8 +237,9 @@ bool chaser_validate::is_mature(bool residual) NOEXCEPT
     const auto ecdsa = query.ecdsa_records();
     const auto schnorr = query.schnorr_records();
 
-    // Nothing to verify and no residuals to release.
-    if (is_zero(ecdsa) && is_zero(schnorr) && batched_.empty())
+    // Nothing to verify and no links to release.
+    if (is_zero(ecdsa) && is_zero(schnorr) &&
+        is_zero(query.prevalid_records()))
         return false;
 
     // Verify residuals whenever, and non-residuals when mature.
@@ -286,11 +249,32 @@ bool chaser_validate::is_mature(bool residual) NOEXCEPT
 }
 
 std::string chaser_validate::log_rate(const std::string& name,
-    size_t numerator, size_t denominator) const NOEXCEPT
+    size_t signatures, size_t milliseconds) const NOEXCEPT
 {
-    const auto rate = numerator / greater(denominator, one);
-    return (boost_format("%1% (%2% / %3%) = %4% sps") %
-        name % numerator % denominator % rate).str();
+    const auto rate = (signatures * 1000u) / greater(milliseconds, one);
+    return (boost_format("%1% (%2% / %3%ms) = %4% sps") %
+        name % signatures % (milliseconds) % rate).str();
+}
+
+// Turnstile.
+// ----------------------------------------------------------------------------
+// protected
+
+bool chaser_validate::enter_capture() NOEXCEPT
+{
+    ++writers_;
+    if (draining_.load())
+    {
+        --writers_;
+        return false;
+    }
+
+    return true;
+}
+
+void chaser_validate::exit_capture() NOEXCEPT
+{
+    --writers_;
 }
 
 BC_POP_WARNING()

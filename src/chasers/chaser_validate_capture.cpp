@@ -18,7 +18,6 @@
  */
 #include <bitcoin/node/chasers/chaser_validate.hpp>
 
-#include <atomic>
 #include <bitcoin/node/define.hpp>
 
 namespace libbitcoin {
@@ -132,7 +131,7 @@ chaser_validate::cursor chaser_validate::open_threshold(size_t rows,
 
 signatures chaser_validate::get_capture(const header_link& link) NOEXCEPT
 {
-    if (!batch_enabled_ || is_current_header(link))
+    if (!batch_enabled_ || link.is_terminal() || is_current_header(link))
         return { false };
 
     const auto sequence = to_shared<atomic_counter>();
