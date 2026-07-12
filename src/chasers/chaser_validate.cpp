@@ -18,7 +18,6 @@
  */
 #include <bitcoin/node/chasers/chaser_validate.hpp>
 
-#include <shared_mutex>
 #include <bitcoin/node/chasers/chaser.hpp>
 #include <bitcoin/node/define.hpp>
 #include <bitcoin/node/full_node.hpp>
@@ -75,9 +74,16 @@ bool chaser_validate::handle_chase(const code&, chase event_,
     // Because in-flight blocks are lost, reset position when backlog clears.
     if (event_ == chase::unfull)
     {
-        recovering_.store(true);
+        disk_recovering_.store(true);
         return true;
     }
+
+    // Record durable state before the suspension gate. A consequence is that
+    // recovery with window_archived_ drains small batches until next checked.
+    if (event_ == chase::windowed)
+        window_archived_.store(true);
+    else if (event_ == chase::checked)
+        window_archived_.store(false);
 
     // Stop generating query during suspension.
     // Incoming events may already be flushed to the strand at this point.
@@ -86,10 +92,16 @@ bool chaser_validate::handle_chase(const code&, chase event_,
 
     switch (event_)
     {
-        case chase::resume:
         case chase::start:
         case chase::bump:
         {
+            POST(do_bump, height_t{});
+            break;
+        }
+        case chase::resume:
+        {
+            // A windowed drain may have been elided during suspension.
+            process_batch(is_residual());
             POST(do_bump, height_t{});
             break;
         }
@@ -98,6 +110,16 @@ bool chaser_validate::handle_chase(const code&, chase event_,
             // value is checked block height.
             BC_ASSERT(std::holds_alternative<height_t>(value));
             POST(do_checked, std::get<height_t>(value));
+            break;
+        }
+        case chase::windowed:
+        {
+            // value is last height in window. Called directly (not posted):
+            // the drain must never depend on scheduling, which saturated
+            // validations can exhaust for the entire window (strand for
+            // admission-side control, never for release-side).
+            BC_ASSERT(std::holds_alternative<height_t>(value));
+            process_batch(is_residual());
             break;
         }
         case chase::regressed:
@@ -146,9 +168,9 @@ void chaser_validate::do_bump(height_t) NOEXCEPT
 {
     BC_ASSERT(stranded());
 
-    if (recovering_.load() && is_zero(validate_backlog_.load()))
+    if (disk_recovering_.load() && is_zero(validate_backlog_.load()))
     {
-        recovering_.store(false);
+        disk_recovering_.store(false);
         set_position(archive().get_fork());
     }
 
@@ -263,28 +285,25 @@ void chaser_validate::complete_block(const code& ec, const header_link& link,
         notify_block({}, height, link, bypass);
     }
 
-    // Batch jobs (all posting from unstranded).
+    // Batch jobs (self-serviced from any thread).
     // ------------------------------------------------------------------------
 
     if (closed() || !batch_enabled_)
         return;
 
-    // Queue block and process batch if ready.
     if (batched)
     {
-        ++batch_backlog_;
-        POST(push_batch, link, height);
+        process_batch(is_residual());
         return;
     }
 
     // Capturing disabled when confirmed chain current (and not under bypass).
-    // When not in effect must drain last batch by last block validation.
     const auto current = !capturing && !bypass;
 
-    // Drain batch when recent (current, or maximum reached without backlog).
+    // Drain batch when recent (current, or window/maximum without backlog).
     if (current || is_residual())
     {
-        POST(process_batch, true);
+        process_batch(true);
     }
 }
 
@@ -313,9 +332,6 @@ void chaser_validate::notify_block(const code& ec, size_t height,
 
 void chaser_validate::stopping(const code& ec) NOEXCEPT
 {
-    // closed() is now true so time to bump batched_ drain.
-    POST(close_batch);
-
     // Stop long-running batch validations.
     stopping_.store(true);
 
