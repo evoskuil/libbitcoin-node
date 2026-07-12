@@ -59,10 +59,12 @@ void chaser_validate::process_batch(bool residual) NOEXCEPT
         return;
 
     // Claim the drain (at most one, losers rely on the winner).
+    // Arrivals now pause at enter_capture (briefly, until verifying_).
     if (draining_.exchange(true))
         return;
 
-    // Wait for captures to complete or abandon on close.
+    // Wait for in-flight captures to complete or abandon on close.
+    // Bounded: arrivals pause rather than enter, so writers_ only drains.
     while (is_nonzero(writers_.load()))
     {
         if (closed())
@@ -74,17 +76,22 @@ void chaser_validate::process_batch(bool residual) NOEXCEPT
         std::this_thread::yield();
     }
 
+    // Divert paused/new arrivals to inline for the verify duration.
+    verifying_.store(true);
+
     // Batch tables are now quiescent (no writers admitted, none in flight).
     // ========================================================================
 
     // Retest under the claim, another drain may have just emptied the tables.
     if (!is_mature(residual))
     {
+        verifying_.store(false);
         draining_.store(false);
         return;
     }
 
     const auto ec = do_process_batch(false);
+    verifying_.store(false);
     draining_.store(false);
     if (ec == network::error::operation_canceled)
         return;
@@ -262,14 +269,20 @@ std::string chaser_validate::log_rate(const std::string& name,
 
 bool chaser_validate::enter_capture() NOEXCEPT
 {
-    ++writers_;
-    if (draining_.load())
+    // Wait out a pending batch cutoff (brief, bounded by in-flight captures),
+    // then capture. Divert to inline only during verify.
+    while (true)
     {
-        --writers_;
-        return false;
-    }
+        ++writers_;
+        if (!draining_.load())
+            return true;
 
-    return true;
+        --writers_;
+        if (verifying_.load() || closed())
+            return false;
+
+        std::this_thread::yield();
+    }
 }
 
 void chaser_validate::exit_capture() NOEXCEPT
