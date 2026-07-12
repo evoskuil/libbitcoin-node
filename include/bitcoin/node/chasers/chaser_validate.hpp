@@ -154,7 +154,7 @@ private:
     std::atomic_bool disk_recovering_{};
     std::atomic_bool window_archived_{};
     std::atomic_bool maximum_posted_{};
-    std::atomic_bool verifying_{};
+    ////std::atomic_bool verifying_{};
     std::atomic_bool draining_{};
     atomic_counter writers_{};
     counters counters_{};
