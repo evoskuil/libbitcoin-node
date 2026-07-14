@@ -129,7 +129,7 @@ code chaser_validate::do_process_batch(bool startup) NOEXCEPT
 
         if (!startup)
         {
-            LOGN(log_rate("Batch verify rate ecdsa.... ", ecdsa,
+            LOGN(log_rate("Verify ecdsa.....", ecdsa,
                 duration_cast<milliseconds>(elapsed).count()));
         }
 
@@ -152,7 +152,7 @@ code chaser_validate::do_process_batch(bool startup) NOEXCEPT
 
         if (!startup)
         {
-            LOGN(log_rate("Batch verify rate schnorr.. ", schnorr, 
+            LOGN(log_rate("Verify schnorr...", schnorr,
                 duration_cast<milliseconds>(elapsed).count()));
         }
 
@@ -259,7 +259,7 @@ std::string chaser_validate::log_rate(const std::string& name,
     size_t signatures, size_t milliseconds) const NOEXCEPT
 {
     const auto rate = (signatures * 1000u) / greater(milliseconds, one);
-    return (boost_format("%1% (%2% / %3%ms) = %4% sps") %
+    return (boost_format("%1% (%2% / %3% ms) = %4% sps") %
         name % signatures % (milliseconds) % rate).str();
 }
 
