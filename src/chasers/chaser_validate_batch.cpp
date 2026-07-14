@@ -119,11 +119,11 @@ code chaser_validate::do_process_batch(bool startup) NOEXCEPT
     {
         header_links invalids{};
         const auto start = network::logger::now();
-        ////if (!query.verify_ecdsa_signatures(stopping_, invalids))
-        ////{
-        ////    LOGN("Batch verify ecdsa canceled (" << ecdsa << ").");
-        ////    return network::error::operation_canceled;
-        ////}
+        if (!query.verify_ecdsa_signatures(stopping_, invalids))
+        {
+            LOGN("Batch verify ecdsa canceled (" << ecdsa << ").");
+            return network::error::operation_canceled;
+        }
         const auto elapsed = network::logger::now() - start;
         fire(events::ecdsa_secs, duration_cast<seconds>(elapsed).count());
 
@@ -142,11 +142,11 @@ code chaser_validate::do_process_batch(bool startup) NOEXCEPT
     {
         header_links invalids{};
         const auto start = network::logger::now();
-        ////if (!query.verify_schnorr_signatures(stopping_, invalids))
-        ////{
-        ////    LOGN("Batch verify schnorr canceled (" << schnorr << ").");
-        ////    return network::error::operation_canceled;
-        ////}
+        if (!query.verify_schnorr_signatures(stopping_, invalids))
+        {
+            LOGN("Batch verify schnorr canceled (" << schnorr << ").");
+            return network::error::operation_canceled;
+        }
         const auto elapsed = network::logger::now() - start;
         fire(events::schnorr_secs, duration_cast<seconds>(elapsed).count());
 
