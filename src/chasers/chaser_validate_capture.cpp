@@ -160,13 +160,13 @@ std::string chaser_validate::log_ratio(const std::string& name,
 
 void chaser_validate::log_captures() const NOEXCEPT
 {
-    LOGN(log_ratio("Capture ecdsa.... ", counters_.ecdsa_,
+    LOGN(log_ratio("Capture ecdsa....", counters_.ecdsa_,
         counters_.ecdsa_     + counters_.missed_ecdsa_));
-    LOGN(log_ratio("Capture multisig. ", counters_.multisig_,
+    LOGN(log_ratio("Capture multisig.", counters_.multisig_,
         counters_.multisig_  + counters_.missed_multisig_));
-    LOGN(log_ratio("Capture schnorr.. ", counters_.schnorr_,
+    LOGN(log_ratio("Capture schnorr..", counters_.schnorr_,
         counters_.schnorr_   + counters_.missed_schnorr_));
-    LOGN(log_ratio("Capture threshold ", counters_.threshold_,
+    LOGN(log_ratio("Capture threshold", counters_.threshold_,
         counters_.threshold_ + zero));
 }
 
