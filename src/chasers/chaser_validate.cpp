@@ -305,6 +305,12 @@ void chaser_validate::complete_block(const code& ec, const header_link& link,
     {
         process_batch(true);
     }
+
+    // Batching has subsided, release slab capacity (no-op once released).
+    if (current)
+    {
+        POST(do_purge_capture);
+    }
 }
 
 void chaser_validate::notify_block(const code& ec, size_t height, 
