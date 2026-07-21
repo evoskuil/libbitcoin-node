@@ -264,22 +264,8 @@ std::string chaser_validate::log_rate(const std::string& name,
 
 bool chaser_validate::enter_capture() NOEXCEPT
 {
-#if defined(DISABLED)
-    // Blocked by batch (also requires other verifying_ enabled).
-    while (true)
-    {
-        ++writers_;
-        if (!draining_.load())
-            return true;
 
-        --writers_;
-        if (verifying_.load() || closed())
-            return false;
-
-        std::this_thread::yield();
-    }
-#else
-    // Bypassed by batch (faster overall, but high bypass).
+    // Capture bypassed by batch.
     ++writers_;
     if (draining_.load())
     {
@@ -288,7 +274,6 @@ bool chaser_validate::enter_capture() NOEXCEPT
     }
 
     return true;
-#endif
 }
 
 void chaser_validate::exit_capture() NOEXCEPT
