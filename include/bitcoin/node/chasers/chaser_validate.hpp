@@ -87,7 +87,7 @@ protected:
     virtual bool mark_invalids(header_links& prevalids,
         const header_links& invalids, bool startup) NOEXCEPT;
 
-    /// Turnstile (drain/capture exclusion without blocking writers).
+    /// Turnstile (drain/commit exclusion without blocking writers).
     virtual bool enter_capture() NOEXCEPT;
     virtual void exit_capture() NOEXCEPT;
 
@@ -97,7 +97,6 @@ protected:
 
 private:
     using atomic_counter = std::atomic<size_t>;
-    using atomic_counter_ptr = std::shared_ptr<atomic_counter>;
     struct counters
     {
         atomic_counter ecdsa_{};
@@ -110,31 +109,17 @@ private:
         atomic_counter missed_threshold_{};
     };
 
-    using schnorr_link = database::schnorr_link;
-    using schnorr_link_ptr = std::shared_ptr<schnorr_link>;
-    using cursor = system::chain::threshold::cursor;
     using missed = signatures::miss;
 
     // Capture handlers.
     void do_log(const system::chain::script& missed) NOEXCEPT;
     void do_fire(missed miss, size_t count) NOEXCEPT;
-    bool do_ecdsa(const system::hash_digest& digest,
-        const system::ec_compressed& point, const system::ec_signature& sign,
-        const header_link& link, const atomic_counter_ptr& sequence) NOEXCEPT;
-    bool do_schnorr(const system::hash_digest& digest,
-        const system::ec_xonly& point, const system::ec_signature& sign,
-        const header_link& link) NOEXCEPT;
-    bool do_multisig(const system::hash_digest& digest,
-        const std::span<const system::ec_compressed>& points,
-        const std::span<const system::ec_signature>& signs,
-        const header_link& link, const atomic_counter_ptr& sequence) NOEXCEPT;
-    bool do_threshold(const system::hash_digest& digest,
-        const system::ec_xonly& point, const system::ec_signature& sign,
-        const schnorr_link_ptr& fk_ptr, const header_link& link) NOEXCEPT;
-    cursor open_threshold(size_t rows, const header_link& link) NOEXCEPT;
 
     // Capture helpers.
     signatures get_capture(const header_link& link) NOEXCEPT;
+    code commit_capture(bool& batched, const header_link& link) NOEXCEPT;
+    void clear_capture() NOEXCEPT;
+    void do_purge_capture() NOEXCEPT;
     std::string log_ratio(const std::string& name, size_t numerator,
         size_t denominator) const NOEXCEPT;
     void log_captures() const NOEXCEPT;

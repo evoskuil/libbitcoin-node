@@ -30,9 +30,6 @@ using namespace system::chain;
 using namespace database;
 using namespace std::placeholders;
 
-// Shared pointers required for lifetime in handler parameters.
-BC_PUSH_WARNING(NO_VALUE_OR_CONST_REF_SHARED_PTR)
-BC_PUSH_WARNING(SMART_PTR_NOT_NEEDED)
 BC_PUSH_WARNING(NO_THROW_IN_NOEXCEPT)
 
 // Capture handlers.
@@ -63,68 +60,6 @@ void chaser_validate::do_fire(missed miss, size_t count) NOEXCEPT
     }
 }
 
-bool chaser_validate::do_ecdsa(const hash_digest& digest,
-    const ec_compressed& point, const ec_signature& sign,
-    const header_link& link, const atomic_counter_ptr& sequence) NOEXCEPT
-{
-    ++counters_.ecdsa_;
-    const auto id = (*sequence)++;
-    if (is_limited<uint16_t>(id)) return false;
-    const auto group = narrow_cast<uint16_t>(id);
-    const auto set = archive().set_signature(digest, point, sign, group, link);
-    if (!set) fault(error::batch5);
-    return set;
-}
-
-bool chaser_validate::do_schnorr(const hash_digest& digest,
-    const ec_xonly& point, const ec_signature& sign,
-    const header_link& link) NOEXCEPT
-{
-    ++counters_.schnorr_;
-    const auto set = archive().set_signature(digest, point, sign, link);
-    if (!set) fault(error::batch6);
-    return set;
-}
-
-bool chaser_validate::do_multisig(const hash_digest& digest,
-    const std::span<const system::ec_compressed>& points,
-    const std::span<const system::ec_signature>& signs,
-    const header_link& link, const atomic_counter_ptr& sequence) NOEXCEPT
-{
-    counters_.multisig_ += points.size();
-    const auto id = (*sequence)++;
-    if (is_limited<uint16_t>(id)) return false;
-    const auto group = narrow_cast<uint16_t>(id);
-    const auto set = archive().set_signatures(digest, points, signs, group, link);
-    if (!set) fault(error::batch7);
-    return set;
-}
-
-bool chaser_validate::do_threshold(const hash_digest& digest,
-    const ec_xonly& point, const ec_signature& sign,
-    const schnorr_link_ptr& fk_ptr, const header_link& link) NOEXCEPT
-{
-    auto set = archive().set_signature((*fk_ptr)++, digest, point, sign, link);
-    if (!set) fault(error::batch8);
-    return set;
-}
-
-chaser_validate::cursor chaser_validate::open_threshold(size_t rows,
-    const header_link& link) NOEXCEPT
-{
-    auto first = archive().allocate_signatures(rows);
-    const auto fk = emplace_shared<schnorr_link>(first);
-    if (fk->is_terminal())
-        return {};
-
-    counters_.threshold_ += rows;
-    return
-    {
-        .put = BIND_THIS(do_threshold, _1, _2, _3, fk, link),
-        .rows = rows
-    };
-}
-
 // Capture helpers.
 // ----------------------------------------------------------------------------
 // private
@@ -134,17 +69,85 @@ signatures chaser_validate::get_capture(const header_link& link) NOEXCEPT
     if (!batch_enabled_ || link.is_terminal() || is_current_header(link))
         return { false };
 
-    const auto sequence = to_shared<atomic_counter>();
+    // The capture populates this thread's accumulators (commit_capture consumes).
     return signatures
     {
         .enabled = true,
         .log = BIND_THIS(do_log, _1),
-        .fire = BIND_THIS(do_fire, _1, _2),
-        .ecdsa = BIND_THIS(do_ecdsa, _1, _2, _3, link, sequence),
-        .schnorr = BIND_THIS(do_schnorr, _1, _2, _3, link),
-        .multisig = BIND_THIS(do_multisig, _1, _2, _3, link, sequence),
-        .threshold = BIND_THIS(open_threshold, _1, link)
+        .fire = BIND_THIS(do_fire, _1, _2)
     };
+}
+
+// Commit this thread's captured signatures as the block's batch rows. All
+// batch table state is written inside the commit epoch (turnstile). When
+// diverted by a drain, or upon store decline, the rows are verified in
+// place, equivalent to the inline evaluation their capture fabricated
+// (batched is cleared so the block completes by the non-batched path).
+code chaser_validate::commit_capture(bool& batched,
+    const header_link& link) NOEXCEPT
+{
+    code ec{};
+    auto committed = false;
+    auto& ecdsa = signatures::ecdsa_rows();
+    auto& schnorr = signatures::schnorr_rows();
+
+    if (enter_capture())
+    {
+        auto& query = archive();
+        committed =
+            query.set_signatures(ecdsa, link) &&
+            query.set_signatures(schnorr, link) &&
+            query.set_prevalid(link);
+        exit_capture();
+
+        // Store decline (e.g. disk full), recoverable once faulted.
+        if (!committed)
+            fault(error::batch5);
+    }
+
+    const auto thresholds = schnorr.thresholds();
+    const auto singles = schnorr.rows().size() - thresholds;
+
+    if (committed)
+    {
+        counters_.ecdsa_ += ecdsa.singles();
+        counters_.multisig_ += ecdsa.multisig_keys();
+        counters_.schnorr_ += singles;
+        counters_.threshold_ += thresholds;
+    }
+    else
+    {
+        counters_.missed_ecdsa_ += ecdsa.singles();
+        counters_.missed_multisig_ += ecdsa.multisig_keys();
+        counters_.missed_schnorr_ += singles;
+        counters_.missed_threshold_ += thresholds;
+
+        // Block validity remains fully determined.
+        batched = false;
+        if (!ecdsa.verify() || !schnorr.verify())
+            ec = system::error::invalid_signature;
+    }
+
+    ecdsa.clear();
+    schnorr.clear();
+    return ec;
+}
+
+// Discard this thread's captured signatures (script failure preempted commit).
+void chaser_validate::clear_capture() NOEXCEPT
+{
+    signatures::ecdsa_rows().clear();
+    signatures::schnorr_rows().clear();
+}
+
+// Release all threads' accumulator capacity (batching subsided). Safe on the
+// strand with an empty backlog: accumulators are populated only within
+// validate_block, and the strand is the sole poster of validations.
+void chaser_validate::do_purge_capture() NOEXCEPT
+{
+    BC_ASSERT(stranded());
+    if (is_zero(validate_backlog_.load()))
+        signatures::purge();
 }
 
 std::string chaser_validate::log_ratio(const std::string& name,
@@ -167,11 +170,9 @@ void chaser_validate::log_captures() const NOEXCEPT
     LOGN(log_ratio("Capture schnorr..", counters_.schnorr_,
         counters_.schnorr_   + counters_.missed_schnorr_));
     LOGN(log_ratio("Capture threshold", counters_.threshold_,
-        counters_.threshold_ + zero));
+        counters_.threshold_ + counters_.missed_threshold_));
 }
 
-BC_POP_WARNING()
-BC_POP_WARNING()
 BC_POP_WARNING()
 
 } // namespace node

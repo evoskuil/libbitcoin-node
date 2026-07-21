@@ -114,30 +114,25 @@ code chaser_validate::validate(bool& batched, bool& capturing, bool bypass,
         if ((ec = block.accept(ctx, subsidy_interval_, initial_subsidy_)))
             return ec;
 
-        // This critical section is mutually-exclusive with batch verification
-        // (turnstile). All batch table state written inside the capture epoch.
-        // ====================================================================
-
-        // Enter the capture turnstile. If drain is in progress, full validate.
-        const auto entered = enter_capture();
-
-        // Initialize signature capture.
-        const auto capture = get_capture(entered ? link : header_link{});
-        capturing = entered ? capture.enabled : true;
+        // Initialize signature capture (appends to this thread's accumulators).
+        const auto capture = get_capture(link);
+        capturing = capture.enabled;
 
         ec = block.connect(ctx, capture);
 
         // At least one signature batch was attempted (batch completion).
         batched = capture.batched;
 
-        // Mark block as valid contingent on batch verification.
-        if (!ec && batched && !query.set_prevalid(link))
-            ec = error::validate6;
-
-        if (entered)
-            exit_capture();
-
-        // ====================================================================
+        // Commit (or discard) the captured signatures, marking the block prevalid
+        // contingent on batch verification. The commit epoch is mutually
+        // exclusive with batch verification (turnstile).
+        if (capturing)
+        {
+            if (!ec && batched)
+                ec = commit_capture(batched, link);
+            else
+                clear_capture();
+        }
 
         if (ec)
             return ec;
