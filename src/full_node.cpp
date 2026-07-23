@@ -435,7 +435,7 @@ bool full_node::is_recent() const NOEXCEPT
         (query_.get_top_confirmed() >= config_.node.maximum_height))
         return true;
 
-    return is_current_time(true);
+    return is_current_chain(true);
 }
 
 // Methods.
