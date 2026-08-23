@@ -118,6 +118,18 @@ public:
     /// The number of inbound peer channels (counted, not quiet).
     virtual size_t inbound_channel_count() const NOEXCEPT;
 
+    /// The number of host pool addresses.
+    virtual size_t address_count() const NOEXCEPT;
+
+    /// Fetch a copy of the host pool addresses.
+    virtual void fetch_addresses(
+        network::address_handler&& handler) const NOEXCEPT;
+
+    /// Network suspension (does not affect administrative connections).
+    virtual bool suspended() const NOEXCEPT;
+    virtual void suspend(const code& ec) NOEXCEPT;
+    virtual void resume() NOEXCEPT;
+
 protected:
 
     /// Constructors.

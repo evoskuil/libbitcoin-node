@@ -93,6 +93,32 @@ void protocol::estimate(size_t target, estimator::mode mode,
 // Events subscription.
 // ----------------------------------------------------------------------------
 
+size_t protocol::address_count() const NOEXCEPT
+{
+    return session_->address_count();
+}
+
+void protocol::fetch_addresses(
+    network::address_handler&& handler) const NOEXCEPT
+{
+    session_->fetch_addresses(std::move(handler));
+}
+
+bool protocol::suspended() const NOEXCEPT
+{
+    return session_->suspended();
+}
+
+void protocol::suspend(const code& ec) NOEXCEPT
+{
+    session_->suspend(ec);
+}
+
+void protocol::resume() NOEXCEPT
+{
+    session_->resume();
+}
+
 // Organizers.
 // ----------------------------------------------------------------------------
 

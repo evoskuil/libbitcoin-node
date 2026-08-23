@@ -175,6 +175,32 @@ size_t session::inbound_channel_count() const NOEXCEPT
     return node_.inbound_channel_count();
 }
 
+size_t session::address_count() const NOEXCEPT
+{
+    return node_.address_count();
+}
+
+void session::fetch_addresses(
+    network::address_handler&& handler) const NOEXCEPT
+{
+    node_.fetch(std::move(handler));
+}
+
+bool session::suspended() const NOEXCEPT
+{
+    return node_.suspended();
+}
+
+void session::suspend(const code& ec) NOEXCEPT
+{
+    node_.suspend(ec);
+}
+
+void session::resume() NOEXCEPT
+{
+    node_.resume();
+}
+
 BC_POP_WARNING()
 
 } // namespace node
