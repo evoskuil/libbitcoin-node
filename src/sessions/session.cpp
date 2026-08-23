@@ -186,6 +186,11 @@ void session::fetch_addresses(
     node_.fetch(std::move(handler));
 }
 
+void session::connect(const network::config::endpoint& endpoint) NOEXCEPT
+{
+    node_.connect(endpoint);
+}
+
 bool session::suspended() const NOEXCEPT
 {
     return node_.suspended();

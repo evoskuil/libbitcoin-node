@@ -125,6 +125,9 @@ public:
     virtual void fetch_addresses(
         network::address_handler&& handler) const NOEXCEPT;
 
+    /// Maintain a manual connection to the given endpoint.
+    virtual void connect(const network::config::endpoint& endpoint) NOEXCEPT;
+
     /// Network suspension (does not affect administrative connections).
     virtual bool suspended() const NOEXCEPT;
     virtual void suspend(const code& ec) NOEXCEPT;

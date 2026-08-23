@@ -104,6 +104,11 @@ void protocol::fetch_addresses(
     session_->fetch_addresses(std::move(handler));
 }
 
+void protocol::connect(const network::config::endpoint& endpoint) NOEXCEPT
+{
+    session_->connect(endpoint);
+}
+
 bool protocol::suspended() const NOEXCEPT
 {
     return session_->suspended();
