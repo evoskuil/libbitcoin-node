@@ -84,6 +84,17 @@ protected:
     void estimate(size_t target, estimator::mode mode,
         estimate_handler&& handler) NOEXCEPT;
 
+    /// Organizers.
+    /// -----------------------------------------------------------------------
+
+    /// Organize a validated header.
+    virtual void organize(const system::chain::header::cptr& header,
+        organize_handler&& handler) NOEXCEPT;
+
+    /// Organize a checked block.
+    virtual void organize(const system::chain::block::cptr& block,
+        organize_handler&& handler) NOEXCEPT;
+
     /// Events subscription.
     /// -----------------------------------------------------------------------
 

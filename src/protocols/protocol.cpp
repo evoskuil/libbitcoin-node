@@ -93,6 +93,21 @@ void protocol::estimate(size_t target, estimator::mode mode,
 // Events subscription.
 // ----------------------------------------------------------------------------
 
+// Organizers.
+// ----------------------------------------------------------------------------
+
+void protocol::organize(const system::chain::header::cptr& header,
+    organize_handler&& handler) NOEXCEPT
+{
+    session_->organize(header, std::move(handler));
+}
+
+void protocol::organize(const system::chain::block::cptr& block,
+    organize_handler&& handler) NOEXCEPT
+{
+    session_->organize(block, std::move(handler));
+}
+
 void protocol::subscribe_chase(event_notifier&& handler) NOEXCEPT
 {
     // This is a shared instance multiply-derived from network::protocol.

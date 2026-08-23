@@ -29,18 +29,6 @@ using namespace network;
 // Organizers.
 // ----------------------------------------------------------------------------
 
-void protocol_peer::organize(const system::chain::header::cptr& header,
-    organize_handler&& handler) NOEXCEPT
-{
-    session_->organize(header, std::move(handler));
-}
-
-void protocol_peer::organize(const system::chain::block::cptr& block,
-    organize_handler&& handler) NOEXCEPT
-{
-    session_->organize(block, std::move(handler));
-}
-
 void protocol_peer::get_hashes(map_handler&& handler) NOEXCEPT
 {
     session_->get_hashes(std::move(handler));
