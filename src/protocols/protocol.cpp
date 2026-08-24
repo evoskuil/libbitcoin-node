@@ -93,6 +93,52 @@ void protocol::estimate(size_t target, estimator::mode mode,
 // Events subscription.
 // ----------------------------------------------------------------------------
 
+size_t protocol::address_count() const NOEXCEPT
+{
+    return session_->address_count();
+}
+
+void protocol::fetch_addresses(
+    network::address_handler&& handler) const NOEXCEPT
+{
+    session_->fetch_addresses(std::move(handler));
+}
+
+void protocol::connect(const network::config::endpoint& endpoint) NOEXCEPT
+{
+    session_->connect(endpoint);
+}
+
+bool protocol::suspended() const NOEXCEPT
+{
+    return session_->suspended();
+}
+
+void protocol::suspend(const code& ec) NOEXCEPT
+{
+    session_->suspend(ec);
+}
+
+void protocol::resume() NOEXCEPT
+{
+    session_->resume();
+}
+
+// Organizers.
+// ----------------------------------------------------------------------------
+
+void protocol::organize(const system::chain::header::cptr& header,
+    organize_handler&& handler) NOEXCEPT
+{
+    session_->organize(header, std::move(handler));
+}
+
+void protocol::organize(const system::chain::block::cptr& block,
+    organize_handler&& handler) NOEXCEPT
+{
+    session_->organize(block, std::move(handler));
+}
+
 void protocol::subscribe_chase(event_notifier&& handler) NOEXCEPT
 {
     // This is a shared instance multiply-derived from network::protocol.

@@ -151,6 +151,9 @@ public:
     /// Methods.
     /// -----------------------------------------------------------------------
 
+    /// Expose the host pool fetch for administrative queries.
+    void fetch(network::address_handler&& handler) NOEXCEPT override;
+
     /// Get current fee estimate.
     void estimate(size_t target, estimator::mode mode,
         estimate_handler&& handler) NOEXCEPT;

@@ -77,12 +77,41 @@ protected:
     /// The number of inbound peer channels (counted, not quiet).
     virtual size_t inbound_channel_count() const NOEXCEPT;
 
+    /// The number of host pool addresses.
+    virtual size_t address_count() const NOEXCEPT;
+
     /// Methods.
     /// -----------------------------------------------------------------------
+
+    /// Fetch a copy of the host pool addresses.
+    virtual void fetch_addresses(
+        network::address_handler&& handler) const NOEXCEPT;
+
+    /// Maintain a manual connection to the given endpoint.
+    virtual void connect(const network::config::endpoint& endpoint) NOEXCEPT;
 
     /// Get current fee estimate.
     void estimate(size_t target, estimator::mode mode,
         estimate_handler&& handler) NOEXCEPT;
+
+    /// Suspensions.
+    /// -----------------------------------------------------------------------
+
+    /// Network suspension (does not affect administrative connections).
+    virtual bool suspended() const NOEXCEPT;
+    virtual void suspend(const code& ec) NOEXCEPT;
+    virtual void resume() NOEXCEPT;
+
+    /// Organizers.
+    /// -----------------------------------------------------------------------
+
+    /// Organize a validated header.
+    virtual void organize(const system::chain::header::cptr& header,
+        organize_handler&& handler) NOEXCEPT;
+
+    /// Organize a checked block.
+    virtual void organize(const system::chain::block::cptr& block,
+        organize_handler&& handler) NOEXCEPT;
 
     /// Events subscription.
     /// -----------------------------------------------------------------------
