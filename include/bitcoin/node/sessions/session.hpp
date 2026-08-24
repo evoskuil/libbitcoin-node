@@ -76,6 +76,13 @@ public:
     /// Methods.
     /// -----------------------------------------------------------------------
 
+    /// Fetch a copy of the host pool addresses.
+    virtual void fetch_addresses(
+        network::address_handler&& handler) const NOEXCEPT;
+
+    /// Maintain a manual connection to the given endpoint.
+    virtual void connect(const network::config::endpoint& endpoint) NOEXCEPT;
+
     /// Get current fee estimate.
     void estimate(size_t target, estimator::mode mode,
         estimate_handler&& handler) NOEXCEPT;
@@ -86,6 +93,11 @@ public:
 
     /// Suspensions.
     /// -----------------------------------------------------------------------
+
+    /// Network suspension (does not affect administrative connections).
+    virtual bool suspended() const NOEXCEPT;
+    virtual void suspend(const code& ec) NOEXCEPT;
+    virtual void resume() NOEXCEPT;
 
     /// Suspend all connections.
     virtual void fault(const code& ec) NOEXCEPT;
@@ -121,17 +133,6 @@ public:
     /// The number of host pool addresses.
     virtual size_t address_count() const NOEXCEPT;
 
-    /// Fetch a copy of the host pool addresses.
-    virtual void fetch_addresses(
-        network::address_handler&& handler) const NOEXCEPT;
-
-    /// Maintain a manual connection to the given endpoint.
-    virtual void connect(const network::config::endpoint& endpoint) NOEXCEPT;
-
-    /// Network suspension (does not affect administrative connections).
-    virtual bool suspended() const NOEXCEPT;
-    virtual void suspend(const code& ec) NOEXCEPT;
-    virtual void resume() NOEXCEPT;
 
 protected:
 

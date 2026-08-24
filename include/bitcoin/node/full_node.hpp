@@ -101,9 +101,6 @@ public:
     /// Resume nework connections.
     void resume() NOEXCEPT override;
 
-    /// Expose the host pool fetch for administrative queries.
-    using network::net::fetch;
-
     /// Suspend all existing and future network connections.
     /// A race condition can result in an unsuspended connection.
     void suspend(const code& ec) NOEXCEPT override;
@@ -153,6 +150,9 @@ public:
 
     /// Methods.
     /// -----------------------------------------------------------------------
+
+    /// Expose the host pool fetch for administrative queries.
+    void fetch(network::address_handler&& handler) NOEXCEPT override;
 
     /// Get current fee estimate.
     void estimate(size_t target, estimator::mode mode,

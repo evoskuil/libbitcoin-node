@@ -80,6 +80,9 @@ protected:
     /// The number of host pool addresses.
     virtual size_t address_count() const NOEXCEPT;
 
+    /// Methods.
+    /// -----------------------------------------------------------------------
+
     /// Fetch a copy of the host pool addresses.
     virtual void fetch_addresses(
         network::address_handler&& handler) const NOEXCEPT;
@@ -87,17 +90,17 @@ protected:
     /// Maintain a manual connection to the given endpoint.
     virtual void connect(const network::config::endpoint& endpoint) NOEXCEPT;
 
+    /// Get current fee estimate.
+    void estimate(size_t target, estimator::mode mode,
+        estimate_handler&& handler) NOEXCEPT;
+
+    /// Suspensions.
+    /// -----------------------------------------------------------------------
+
     /// Network suspension (does not affect administrative connections).
     virtual bool suspended() const NOEXCEPT;
     virtual void suspend(const code& ec) NOEXCEPT;
     virtual void resume() NOEXCEPT;
-
-    /// Methods.
-    /// -----------------------------------------------------------------------
-
-    /// Get current fee estimate.
-    void estimate(size_t target, estimator::mode mode,
-        estimate_handler&& handler) NOEXCEPT;
 
     /// Organizers.
     /// -----------------------------------------------------------------------
