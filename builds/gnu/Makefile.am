@@ -73,8 +73,6 @@ src_libbitcoin_node_la_SOURCES = \
     ${srcdir}/../../src/chasers/chaser_validate_batch.cpp \
     ${srcdir}/../../src/chasers/chaser_validate_capture.cpp \
     ${srcdir}/../../src/chasers/chaser_validate_parallel.cpp \
-    ${srcdir}/../../src/messages/block.cpp \
-    ${srcdir}/../../src/messages/transaction.cpp \
     ${srcdir}/../../src/protocols/protocol.cpp \
     ${srcdir}/../../src/protocols/protocol_block_in_106.cpp \
     ${srcdir}/../../src/protocols/protocol_block_in_31800.cpp \
@@ -156,14 +154,6 @@ include_bitcoin_node_impl_sessionsdir = \
 include_bitcoin_node_impl_sessions_HEADERS = \
     ${srcdir}/../../include/bitcoin/node/impl/sessions/session_peer.ipp
 
-include_bitcoin_node_messagesdir = \
-    ${includedir}/bitcoin/node/messages
-
-include_bitcoin_node_messages_HEADERS = \
-    ${srcdir}/../../include/bitcoin/node/messages/block.hpp \
-    ${srcdir}/../../include/bitcoin/node/messages/messages.hpp \
-    ${srcdir}/../../include/bitcoin/node/messages/transaction.hpp
-
 include_bitcoin_node_protocolsdir = \
     ${includedir}/bitcoin/node/protocols
 
@@ -240,7 +230,8 @@ test_libbitcoin_node_test_SOURCES = \
     ${srcdir}/../../test/chasers/chaser_template.cpp \
     ${srcdir}/../../test/chasers/chaser_transaction.cpp \
     ${srcdir}/../../test/chasers/chaser_validate.cpp \
-    ${srcdir}/../../test/messages/block.cpp \
+    ${srcdir}/../../test/functional/p2p.cpp \
+    ${srcdir}/../../test/functional/p2p_setup_fixture.cpp \
     ${srcdir}/../../test/protocols/protocol.cpp \
     ${srcdir}/../../test/sessions/session.cpp
 

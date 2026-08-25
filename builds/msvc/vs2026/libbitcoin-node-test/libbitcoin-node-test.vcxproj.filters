@@ -13,7 +13,7 @@
     <Filter Include="src\chasers">
       <UniqueIdentifier>{4BD50864-D3BC-4F64-0000-000000000001}</UniqueIdentifier>
     </Filter>
-    <Filter Include="src\messages">
+    <Filter Include="src\functional">
       <UniqueIdentifier>{4BD50864-D3BC-4F64-0000-000000000002}</UniqueIdentifier>
     </Filter>
     <Filter Include="src\protocols">
@@ -72,11 +72,14 @@
     <ClCompile Include="..\..\..\..\test\full_node.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\test\functional\p2p.cpp">
+      <Filter>src\functional</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\test\functional\p2p_setup_fixture.cpp">
+      <Filter>src\functional</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\..\test\main.cpp">
       <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\test\messages\block.cpp">
-      <Filter>src\messages</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\test\protocols\protocol.cpp">
       <Filter>src\protocols</Filter>
@@ -92,6 +95,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\..\test\functional\p2p_setup_fixture.hpp">
+      <Filter>src\functional</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\..\..\test\test.hpp">
       <Filter>src</Filter>
     </ClInclude>
