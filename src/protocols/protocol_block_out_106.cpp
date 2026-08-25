@@ -20,7 +20,6 @@
 
 #include <chrono>
 #include <bitcoin/node/define.hpp>
-#include <bitcoin/node/messages/messages.hpp>
 
 namespace libbitcoin {
 namespace node {
@@ -226,7 +225,7 @@ void protocol_block_out_106::send_block(const code& ec) NOEXCEPT
     }
 
     const auto start = logger::now();
-    node::messages::block out
+    messages::peer::block out
     {
         { query.get_wire_block(link, witness), witness }
     };
