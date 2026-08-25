@@ -134,6 +134,8 @@
     <ClCompile Include="..\..\..\..\test\error.cpp" />
     <ClCompile Include="..\..\..\..\test\estimator.cpp" />
     <ClCompile Include="..\..\..\..\test\full_node.cpp" />
+    <ClCompile Include="..\..\..\..\test\functional\p2p.cpp" />
+    <ClCompile Include="..\..\..\..\test\functional\p2p_setup_fixture.cpp" />
     <ClCompile Include="..\..\..\..\test\main.cpp" />
     <ClCompile Include="..\..\..\..\test\protocols\protocol.cpp" />
     <ClCompile Include="..\..\..\..\test\sessions\session.cpp" />
@@ -141,6 +143,7 @@
     <ClCompile Include="..\..\..\..\test\test.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\..\test\functional\p2p_setup_fixture.hpp" />
     <ClInclude Include="..\..\..\..\test\test.hpp" />
   </ItemGroup>
   <ItemGroup>
