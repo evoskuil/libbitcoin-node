@@ -97,6 +97,7 @@ private:
     const float allowed_deviation_;
     const size_t maximum_concurrency_;
     const size_t maximum_height_;
+    const size_t bypass_height_;
     const size_t connections_;
     const size_t step_;
 
