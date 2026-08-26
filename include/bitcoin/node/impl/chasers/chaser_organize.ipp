@@ -645,7 +645,7 @@ CLASS::chain_state::cptr CLASS::get_chain_state(
         return it->second->get_state();
 
     // previous_hash may or not exist and/or be a candidate.
-    return archive().get_chain_state(settings_, previous_hash);
+    return archive().get_confirmed_chain_state(settings_, previous_hash);
 }
 
 // Also obtains branch point for work summation termination.
