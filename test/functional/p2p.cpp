@@ -26,8 +26,7 @@ BOOST_AUTO_TEST_CASE(functional_p2p__handshake__default__provides_network_and_wi
 {
     BOOST_REQUIRE(handshake());
     BOOST_REQUIRE_EQUAL(node_version->value, config_.network.protocol_maximum);
-    BOOST_REQUIRE_EQUAL(node_version->services,
-        service::node_network | service::node_witness);
+    BOOST_REQUIRE_EQUAL(node_version->services, service::node_network | service::node_witness);
 }
 
 BOOST_AUTO_TEST_CASE(functional_p2p__ping__nonce__pong_echo)
