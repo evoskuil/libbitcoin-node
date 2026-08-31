@@ -64,6 +64,8 @@ chaser_check::chaser_check(full_node& node) NOEXCEPT
     allowed_deviation_(node.node_settings().allowed_deviation),
     maximum_concurrency_(node.node_settings().maximum_concurrency_()),
     maximum_height_(node.node_settings().maximum_height_()),
+    bypass_height_(std::max(node.system_settings().milestone.height(),
+        node.system_settings().top_checkpoint().height())),
     connections_(get_target_connections(node.network_settings())),
     step_(get_step(connections_, maximum_concurrency_))
 {
@@ -509,10 +511,14 @@ size_t chaser_check::set_unassociated() NOEXCEPT
     // The last request (requested_) stops at the last gap in the window, but
     // validation continues until the next gap. Start next scan above validated
     // not last requested, since all between are already downloaded.
+    // Bypassed blocks may archive unprobed, so the window must not extend
+    // above the bypass height until all blocks at/below it are associated.
     const auto& query = archive();
     const auto previous = requested_;
     const auto step = ceilinged_add(position(), maximum_concurrency_);
-    const auto stop = std::min(step, maximum_height_);
+    const auto span = std::min(step, maximum_height_);
+    const auto stop = position() < bypass_height_ ?
+        std::min(span, bypass_height_) : span;
     size_t count{};
 
     while (true)
