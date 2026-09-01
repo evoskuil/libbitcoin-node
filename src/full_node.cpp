@@ -175,6 +175,15 @@ void full_node::organize(const system::chain::block::cptr& block,
     chaser_block_.organize(block, std::move(handler));
 }
 
+void full_node::prioritize(const system::hash_digest& hash,
+    organize_handler&& handler) NOEXCEPT
+{
+    if (config_.node.headers_first)
+        chaser_header_.prioritize(hash, std::move(handler));
+    else
+        chaser_block_.prioritize(hash, std::move(handler));
+}
+
 void full_node::get_hashes(map_handler&& handler) NOEXCEPT
 {
     chaser_check_.get_hashes(std::move(handler));

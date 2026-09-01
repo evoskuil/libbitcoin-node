@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Copyright (c) 2011-2026 libbitcoin developers
  *
  * This file is part of libbitcoin.
@@ -73,7 +73,17 @@ void CLASS::organize(const typename Block::cptr& block,
     if (closed())
         return;
 
-    POST(do_organize, block, std::move(handler));
+    POST(do_organize, block, false, std::move(handler));
+}
+
+TEMPLATE
+void CLASS::prioritize(const system::hash_digest& hash,
+    organize_handler&& handler) NOEXCEPT
+{
+    if (closed())
+        return;
+
+    POST(do_prioritize, hash, std::move(handler));
 }
 
 // Methods
@@ -113,7 +123,7 @@ bool CLASS::handle_chase(const code&, chase event_, event_value value) NOEXCEPT
 }
 
 TEMPLATE
-void CLASS::do_organize(typename Block::cptr block,
+void CLASS::do_organize(typename Block::cptr block, bool prioritized,
     const organize_handler& handler) NOEXCEPT
 {
     BC_ASSERT(stranded());
@@ -217,7 +227,7 @@ void CLASS::do_organize(typename Block::cptr block,
     bool strong{};
     const auto branch_size = tree_branch.size() + store_branch.size();
     const auto branch_point = height - add1(branch_size);
-    if (!query.get_strong_branch(strong, work, branch_point))
+    if (!query.get_strong_branch(strong, work, branch_point, prioritized))
     {
         handler(fault(error::organize3), height);
         return;
@@ -331,6 +341,38 @@ void CLASS::do_organize(typename Block::cptr block,
     update_checkpoint(height);
     shrink_tree(current);
     handler(error::success, height);
+}
+
+// bitcoind's preciousblock, a manual tie break between equal work branches.
+// The preference is not retained, as the reorganized branch then wins ties.
+TEMPLATE
+void CLASS::do_prioritize(const system::hash_digest& hash,
+    const organize_handler& handler) NOEXCEPT
+{
+    BC_ASSERT(stranded());
+
+    if (closed())
+        return;
+
+    // Only the top of a cached branch can tie the candidate top.
+    if (std::any_of(tree_.begin(), tree_.end(), [&](const auto& item) NOEXCEPT
+        {
+            return get_header(*item.second).previous_block_hash() == hash;
+        }))
+    {
+        handler(error::success, {});
+        return;
+    }
+
+    // A tied branch is cached, extract it for reevaluation as prioritized.
+    auto handle = tree_.extract(hash);
+    if (!handle)
+    {
+        handler(database::error::not_found, {});
+        return;
+    }
+
+    do_organize(handle.mapped(), true, handler);
 }
 
 TEMPLATE

@@ -44,6 +44,10 @@ public:
     virtual void organize(const typename Block::cptr& block,
         organize_handler&& handler) NOEXCEPT;
 
+    /// Reorganize to the branch of an archived block of at least equal work.
+    virtual void prioritize(const system::hash_digest& hash,
+        organize_handler&& handler) NOEXCEPT;
+
 protected:
     using header_link = database::header_link;
     using chain_state = system::chain::chain_state;
@@ -89,12 +93,16 @@ protected:
     virtual bool handle_chase(const code&, chase event_,
         event_value value) NOEXCEPT;
 
-    /// Organize a discovered Block.
-    virtual void do_organize(typename Block::cptr block,
+    /// Organize a discovered Block, prioritized accepts a tied branch.
+    virtual void do_organize(typename Block::cptr block, bool prioritized,
         const organize_handler& handler) NOEXCEPT;
 
     /// Reorganize following Block unconfirmability.
     virtual void do_disorganize(header_t header) NOEXCEPT;
+
+    /// Reorganize to the branch of the given block.
+    virtual void do_prioritize(const system::hash_digest& hash,
+        const organize_handler& handler) NOEXCEPT;
 
     /// Properties
     /// -----------------------------------------------------------------------

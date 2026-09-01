@@ -139,6 +139,12 @@ void protocol::organize(const system::chain::block::cptr& block,
     session_->organize(block, std::move(handler));
 }
 
+void protocol::prioritize(const system::hash_digest& hash,
+    organize_handler&& handler) NOEXCEPT
+{
+    session_->prioritize(hash, std::move(handler));
+}
+
 void protocol::subscribe_chase(event_notifier&& handler) NOEXCEPT
 {
     // This is a shared instance multiply-derived from network::protocol.
