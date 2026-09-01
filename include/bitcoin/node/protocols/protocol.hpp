@@ -113,6 +113,10 @@ protected:
     virtual void organize(const system::chain::block::cptr& block,
         organize_handler&& handler) NOEXCEPT;
 
+    /// Reorganize to the branch of an archived block of at least equal work.
+    virtual void prioritize(const system::hash_digest& hash,
+        organize_handler&& handler) NOEXCEPT;
+
     /// Events subscription.
     /// -----------------------------------------------------------------------
 

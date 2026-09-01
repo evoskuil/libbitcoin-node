@@ -164,8 +164,9 @@ void chaser_confirm::do_bumped(height_t) NOEXCEPT
         }
 
         // Compares candidate branch work to confirmed (above fork point).
+        // A tie is accepted because only prioritization creates one.
         bool strong{};
-        if (!query.get_strong_fork(strong, work, fork_point))
+        if (!query.get_strong_fork(strong, work, fork_point, true))
         {
             fault(error::confirm3);
             return;
