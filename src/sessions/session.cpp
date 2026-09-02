@@ -186,12 +186,6 @@ size_t session::address_count() const NOEXCEPT
     return node_.address_count();
 }
 
-void session::fetch_addresses(
-    network::address_handler&& handler) const NOEXCEPT
-{
-    node_.fetch(std::move(handler));
-}
-
 void session::connect(const network::config::endpoint& endpoint) NOEXCEPT
 {
     node_.connect(endpoint);

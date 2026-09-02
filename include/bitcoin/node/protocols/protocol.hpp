@@ -83,10 +83,6 @@ protected:
     /// Methods.
     /// -----------------------------------------------------------------------
 
-    /// Fetch a copy of the host pool addresses.
-    virtual void fetch_addresses(
-        network::address_handler&& handler) const NOEXCEPT;
-
     /// Maintain a manual connection to the given endpoint.
     virtual void connect(const network::config::endpoint& endpoint) NOEXCEPT;
 

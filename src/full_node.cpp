@@ -456,11 +456,6 @@ time_t full_node::start_time() const NOEXCEPT
 // Methods.
 // ----------------------------------------------------------------------------
 
-void full_node::fetch(network::address_handler&& handler) NOEXCEPT
-{
-    network::net::fetch(std::move(handler));
-}
-
 void full_node::estimate(size_t target, estimator::mode mode,
     estimate_handler&& handler) NOEXCEPT
 {
