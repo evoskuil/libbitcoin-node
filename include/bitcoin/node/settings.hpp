@@ -47,8 +47,8 @@ public:
     bool provide_filters;
     bool limited_blocks;
     float allowed_deviation;
-    float minimum_fee_rate;
-    float minimum_bump_rate;
+    double minimum_fee_rate;
+    double minimum_bump_rate;
     uint64_t batch_signatures;
     uint16_t announcement_cache;
     uint16_t fee_estimate_horizon;
