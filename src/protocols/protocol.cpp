@@ -98,12 +98,6 @@ size_t protocol::address_count() const NOEXCEPT
     return session_->address_count();
 }
 
-void protocol::fetch_addresses(
-    network::address_handler&& handler) const NOEXCEPT
-{
-    session_->fetch_addresses(std::move(handler));
-}
-
 void protocol::connect(const network::config::endpoint& endpoint) NOEXCEPT
 {
     session_->connect(endpoint);
