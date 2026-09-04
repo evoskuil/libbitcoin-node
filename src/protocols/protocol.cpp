@@ -113,9 +113,9 @@ void protocol::suspend(const code& ec) NOEXCEPT
     session_->suspend(ec);
 }
 
-void protocol::resume() NOEXCEPT
+bool protocol::resume() NOEXCEPT
 {
-    session_->resume();
+    return session_->resume();
 }
 
 // Organizers.

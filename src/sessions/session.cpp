@@ -201,9 +201,9 @@ void session::suspend(const code& ec) NOEXCEPT
     node_.suspend(ec);
 }
 
-void session::resume() NOEXCEPT
+bool session::resume() NOEXCEPT
 {
-    node_.resume();
+    return node_.resume();
 }
 
 BC_POP_WARNING()

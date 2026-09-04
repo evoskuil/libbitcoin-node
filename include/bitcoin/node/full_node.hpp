@@ -103,7 +103,7 @@ public:
     /// -----------------------------------------------------------------------
 
     /// Resume nework connections.
-    void resume() NOEXCEPT override;
+    bool resume() NOEXCEPT override;
 
     /// Suspend all existing and future network connections.
     /// A race condition can result in an unsuspended connection.

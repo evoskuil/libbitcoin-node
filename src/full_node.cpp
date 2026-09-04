@@ -263,17 +263,23 @@ void full_node::unsubscribe_chase(object_key key) NOEXCEPT
 // Suspensions.
 // ----------------------------------------------------------------------------
 
-void full_node::resume() NOEXCEPT
+bool full_node::resume() NOEXCEPT
 {
+    if (query_.is_full())
+    {
+        LOGF("Cannot resume network, disk full.");
+        return false;
+    }
+
     if (query_.is_fault())
     {
         LOGF("Cannot resume network, " << query_.get_fault());
-        return;
+        return false;
     }
 
     LOGS("Resuming network.");
     notify(error::success, chase::resume, {});
-    net::resume();
+    return net::resume();
 }
 
 // This is just a best effort, the call may have to be repeated.
