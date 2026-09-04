@@ -97,7 +97,7 @@ public:
     /// Network suspension (does not affect administrative connections).
     virtual bool suspended() const NOEXCEPT;
     virtual void suspend(const code& ec) NOEXCEPT;
-    virtual void resume() NOEXCEPT;
+    virtual bool resume() NOEXCEPT;
 
     /// Suspend all connections.
     virtual void fault(const code& ec) NOEXCEPT;
