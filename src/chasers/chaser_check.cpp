@@ -18,9 +18,7 @@
  */
 #include <bitcoin/node/chasers/chaser_check.hpp>
 
-#include <algorithm>
 #include <cmath>
-#include <memory>
 #include <ratio>
 #include <bitcoin/node/chasers/chaser.hpp>
 #include <bitcoin/node/define.hpp>

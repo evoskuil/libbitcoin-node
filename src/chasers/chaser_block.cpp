@@ -18,7 +18,6 @@
  */
 #include <bitcoin/node/chasers/chaser_block.hpp>
 
-#include <algorithm>
 #include <bitcoin/node/chasers/chaser_organize.hpp>
 #include <bitcoin/node/define.hpp>
 #include <bitcoin/node/full_node.hpp>

@@ -18,7 +18,6 @@
  */
 #include <bitcoin/node/protocols/protocol_block_in_31800.hpp>
 
-#include <algorithm>
 #include <bitcoin/node/chasers/chasers.hpp>
 #include <bitcoin/node/define.hpp>
 

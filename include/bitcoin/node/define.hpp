@@ -20,9 +20,6 @@
 #define LIBBITCOIN_NODE_DEFINE_HPP
 
 /// Standard includes (do not include directly).
-#include <memory>
-#include <utility>
-#include <variant>
 
 /// Pulls in common /node headers (excluding settings/config/full_node).
 #include <bitcoin/node/chase.hpp>

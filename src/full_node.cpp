@@ -18,7 +18,6 @@
  */
 #include <bitcoin/node/full_node.hpp>
 
-#include <utility>
 #include <bitcoin/node/chasers/chasers.hpp>
 #include <bitcoin/node/define.hpp>
 #include <bitcoin/node/estimator.hpp>

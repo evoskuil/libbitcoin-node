@@ -20,7 +20,6 @@
 #define LIBBITCOIN_NODE_ESTIMATOR_HPP
 
 #include <atomic>
-#include <memory>
 #include <bitcoin/node/define.hpp>
 
 namespace libbitcoin {

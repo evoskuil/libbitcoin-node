@@ -19,7 +19,6 @@
 #include <bitcoin/node/chasers/chaser_validate.hpp>
 
 #include <atomic>
-#include <algorithm>
 #include <thread>
 #include <bitcoin/node/define.hpp>
 

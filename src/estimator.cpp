@@ -18,7 +18,6 @@
  */
 #include <bitcoin/node/estimator.hpp>
 
-#include <algorithm>
 #include <atomic>
 #include <cmath>
 #include <ranges>
