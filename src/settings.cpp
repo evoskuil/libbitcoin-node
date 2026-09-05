@@ -18,7 +18,6 @@
  */
 #include <bitcoin/node/settings.hpp>
 
-#include <algorithm>
 #include <filesystem>
 #include <bitcoin/node/define.hpp>
 #include <bitcoin/node/estimator.hpp>

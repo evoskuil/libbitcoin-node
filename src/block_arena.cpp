@@ -18,7 +18,6 @@
  */
 #include <bitcoin/node/block_arena.hpp>
 
-#include <algorithm>
 #include <bitcoin/node/define.hpp>
 
 namespace libbitcoin {

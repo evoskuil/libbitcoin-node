@@ -19,8 +19,6 @@
 #ifndef LIBBITCOIN_NODE_SESSIONS_SESSION_PEER_HPP
 #define LIBBITCOIN_NODE_SESSIONS_SESSION_PEER_HPP
 
-#include <memory>
-#include <utility>
 #include <bitcoin/node/channels/channels.hpp>
 #include <bitcoin/node/define.hpp>
 #include <bitcoin/node/protocols/protocols.hpp>

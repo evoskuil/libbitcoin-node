@@ -19,7 +19,6 @@
 #ifndef LIBBITCOIN_NODE_CHASERS_CHASER_ORGANIZE_IPP
 #define LIBBITCOIN_NODE_CHASERS_CHASER_ORGANIZE_IPP
 
-#include <algorithm>
 #include <ranges>
 #include <bitcoin/node/chasers/chaser.hpp>
 #include <bitcoin/node/define.hpp>

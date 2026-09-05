@@ -19,7 +19,6 @@
 #ifndef LIBBITCOIN_NODE_PROTOCOLS_PROTOCOL_OBSERVER_HPP
 #define LIBBITCOIN_NODE_PROTOCOLS_PROTOCOL_OBSERVER_HPP
 
-#include <memory>
 #include <bitcoin/node/define.hpp>
 #include <bitcoin/node/protocols/protocol.hpp>
 #include <bitcoin/node/protocols/protocol_peer.hpp>

@@ -18,7 +18,6 @@
  */
 #include <bitcoin/node/sessions/session.hpp>
 
-#include <utility>
 #include <bitcoin/node/configuration.hpp>
 #include <bitcoin/node/define.hpp>
 #include <bitcoin/node/full_node.hpp>

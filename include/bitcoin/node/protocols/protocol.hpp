@@ -19,7 +19,6 @@
 #ifndef LIBBITCOIN_NODE_PROTOCOLS_PROTOCOL_HPP
 #define LIBBITCOIN_NODE_PROTOCOLS_PROTOCOL_HPP
 
-#include <memory>
 #include <bitcoin/node/channels/channels.hpp>
 #include <bitcoin/node/configuration.hpp>
 #include <bitcoin/node/define.hpp>
