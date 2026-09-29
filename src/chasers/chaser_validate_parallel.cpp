@@ -60,21 +60,23 @@ void chaser_validate::validate_block(const header_link& link,
     }
     else
     {
-        // TODO: implement allocator parameter resulting in full allocation to
-        // shared_ptr<block>, to optimize deallocate (12% of milestone/filter).
-        const auto block = query.get_block(link, node_witness_);
+        // Witness is not validated under bypass (and may be pruned).
+        const auto witness = node_witness_ && !bypass;
+        chain::view::block block{ query.get_wire_block(link, witness), witness };
+        prevout_spends spends{};
+        tx_links conflicts{};
 
-        if (!block)
+        if (!block.is_valid())
         {
             ec = error::validate2;
         }
-        else if ((ec = populate(bypass, *block, ctx)))
+        else if ((ec = populate(block, spends, conflicts, link, ctx)))
         {
             if (!query.set_block_unconfirmable(link))
                 ec = error::validate4;
         }
-        else if ((ec = validate(batched, capturing, bypass, *block, link,
-            ctx)))
+        else if ((ec = validate(batched, capturing, bypass, block, spends,
+            conflicts, link, ctx)))
         {
             if (!query.set_block_unconfirmable(link))
                 ec = error::validate5;
@@ -95,31 +97,18 @@ void chaser_validate::validate_block(const header_link& link,
 // helpers
 // ----------------------------------------------------------------------------
 
-code chaser_validate::populate(bool bypass, const chain::block& block,
+code chaser_validate::populate(chain::view::block& block,
+    prevout_spends& spends, tx_links& conflicts, const header_link& link,
     const chain::context& ctx) NOEXCEPT
 {
-    const auto& query = archive();
+    // Spends identify internal spends allowing confirmation bypass.
+    system::data_chunk prevouts{};
+    if (!archive().get_block_prevouts(prevouts, spends, conflicts, link))
+        return system::error::missing_previous_output;
 
-    if (bypass)
-    {
-        // Populating for filters only (no validation metadata required).
-        block.populate(ctx);
-        if (!query.populate_without_metadata(block))
-            return system::error::missing_previous_output;
-    }
-    else
-    {
-        // Internal maturity and time locks are verified here because they are
-        // the only necessary confirmation checks for internal spends.
-        if (const auto ec = block.populate(ctx))
-            return ec;
-
-        // Metadata identifies internal spends allowing confirmation bypass.
-        if (!query.populate_with_metadata(block))
-            return system::error::missing_previous_output;
-    }
-    
-    return error::success;
+    // Internal maturity and time locks are verified here because they are
+    // the only necessary confirmation checks for internal spends.
+    return block.populate(ctx, std::move(prevouts));
 }
 
 // A block with all txs pooled under a sufficient context requires only block
@@ -148,15 +137,17 @@ code chaser_validate::complete_pooled(const header_link& link,
     {
         bool batched{}, capturing{};
         constexpr auto bypass = true;
-        const auto block = query.get_block(link, node_witness_);
-        if (!block)
+        chain::view::block block{ query.get_wire_block(link, false), false };
+        prevout_spends spends{};
+        tx_links conflicts{};
+        if (!block.is_valid())
             return error::validate2;
 
-        if (populate(bypass, *block, ctx))
+        if (populate(block, spends, conflicts, link, ctx))
             return error::validate11;
 
-        if (const auto ec = validate(batched, capturing, bypass, *block, link,
-            ctx))
+        if (const auto ec = validate(batched, capturing, bypass, block, spends,
+            conflicts, link, ctx))
             return ec;
     }
 
@@ -165,7 +156,8 @@ code chaser_validate::complete_pooled(const header_link& link,
 }
 
 code chaser_validate::validate(bool& batched, bool& capturing, bool bypass,
-    const chain::block& block, const header_link& link,
+    const chain::view::block& block, const prevout_spends& spends,
+    const tx_links& conflicts, const header_link& link,
     const chain::context& ctx) NOEXCEPT
 {
     auto& query = archive();
@@ -173,7 +165,7 @@ code chaser_validate::validate(bool& batched, bool& capturing, bool bypass,
     if (!bypass)
     {
         code ec{};
-        if (((ec = block.check(false))) || ((ec = block.check(ctx, false))))
+        if (((ec = block.check())) || ((ec = block.check(ctx))))
             return ec;
 
         if ((ec = block.accept(ctx, subsidy_interval_, initial_subsidy_)))
@@ -203,7 +195,7 @@ code chaser_validate::validate(bool& batched, bool& capturing, bool bypass,
             return ec;
 
         // Prevouts optimize confirmation.
-        if (!query.set_prevouts(link, block))
+        if (!query.set_prevouts(link, spends, conflicts))
             return error::validate7;
     }
 
