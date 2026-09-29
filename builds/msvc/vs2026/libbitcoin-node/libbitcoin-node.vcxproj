@@ -107,8 +107,6 @@
     <ClInclude Include="..\..\..\..\build\include\bitcoin\node\version.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\src\block_arena.cpp" />
-    <ClCompile Include="..\..\..\..\src\block_memory.cpp" />
     <ClCompile Include="..\..\..\..\src\channels\channel_peer.cpp" />
     <ClCompile Include="..\..\..\..\src\chasers\chaser.cpp" />
     <ClCompile Include="..\..\..\..\src\chasers\chaser_check.cpp" />
@@ -157,8 +155,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\include\bitcoin\node.hpp" />
-    <ClInclude Include="..\..\..\..\include\bitcoin\node\block_arena.hpp" />
-    <ClInclude Include="..\..\..\..\include\bitcoin\node\block_memory.hpp" />
     <ClInclude Include="..\..\..\..\include\bitcoin\node\channels\channel.hpp" />
     <ClInclude Include="..\..\..\..\include\bitcoin\node\channels\channel_peer.hpp" />
     <ClInclude Include="..\..\..\..\include\bitcoin\node\channels\channels.hpp" />

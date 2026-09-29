@@ -94,8 +94,6 @@
     <Import Project="$(ProjectDir)$(ProjectName).props" />
   </ImportGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\test\block_arena.cpp" />
-    <ClCompile Include="..\..\..\..\test\block_memory.cpp" />
     <ClCompile Include="..\..\..\..\test\channel_peer.cpp" />
     <ClCompile Include="..\..\..\..\test\chasers\chaser.cpp" />
     <ClCompile Include="..\..\..\..\test\chasers\chaser_check.cpp" />

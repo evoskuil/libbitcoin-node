@@ -51,12 +51,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\src\block_arena.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\src\block_memory.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\..\src\channels\channel_peer.cpp">
       <Filter>src\channels</Filter>
     </ClCompile>
@@ -196,12 +190,6 @@
   <ItemGroup>
     <ClInclude Include="..\..\..\..\include\bitcoin\node.hpp">
       <Filter>include\bitcoin</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\include\bitcoin\node\block_arena.hpp">
-      <Filter>include\bitcoin\node</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\include\bitcoin\node\block_memory.hpp">
-      <Filter>include\bitcoin\node</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\include\bitcoin\node\channels\channel.hpp">
       <Filter>include\bitcoin\node\channels</Filter>

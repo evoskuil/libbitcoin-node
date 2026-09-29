@@ -51,8 +51,6 @@ src_libbitcoin_node_la_LIBADD = \
     ${libbitcoin_network_LIBS}
 
 src_libbitcoin_node_la_SOURCES = \
-    ${srcdir}/../../src/block_arena.cpp \
-    ${srcdir}/../../src/block_memory.cpp \
     ${srcdir}/../../src/configuration.cpp \
     ${srcdir}/../../src/error.cpp \
     ${srcdir}/../../src/estimator.cpp \
@@ -109,8 +107,6 @@ include_bitcoin_nodedir = \
     ${includedir}/bitcoin/node
 
 include_bitcoin_node_HEADERS = \
-    ${srcdir}/../../include/bitcoin/node/block_arena.hpp \
-    ${srcdir}/../../include/bitcoin/node/block_memory.hpp \
     ${srcdir}/../../include/bitcoin/node/chase.hpp \
     ${srcdir}/../../include/bitcoin/node/configuration.hpp \
     ${srcdir}/../../include/bitcoin/node/define.hpp \
@@ -215,8 +211,6 @@ test_libbitcoin_node_test_LDADD = \
     ${src_libbitcoin_node_la_LIBADD}
 
 test_libbitcoin_node_test_SOURCES = \
-    ${srcdir}/../../test/block_arena.cpp \
-    ${srcdir}/../../test/block_memory.cpp \
     ${srcdir}/../../test/channel_peer.cpp \
     ${srcdir}/../../test/configuration.cpp \
     ${srcdir}/../../test/error.cpp \
