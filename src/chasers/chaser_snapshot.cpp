@@ -86,7 +86,7 @@ code chaser_snapshot::start() NOEXCEPT
             notify(error::success, chases::pruned{ top });
             LOG_ONLY(const auto time = logger::now() - begin;)
             LOG_ONLY(const auto span = duration_cast<milliseconds>(time);)
-            LOGN("Pruned prevout cache at height [" << query.get_top_confirmed()
+            LOGN("Pruned pool at height [" << query.get_top_confirmed()
                 << "] complete in " << span.count() << " msecs.");
         }
     }
@@ -196,7 +196,7 @@ void chaser_snapshot::do_prune(header_t link) NOEXCEPT
             resume();
         LOG_ONLY(const auto time = logger::now() - start;)
         LOG_ONLY(const auto span = duration_cast<milliseconds>(time);)
-        LOGN("Pruned prevout cache at height [" << archive().get_top_confirmed()
+        LOGN("Pruned pool at height [" << archive().get_top_confirmed()
             << "] complete in " << span.count() << " msecs.");
     }
 }
