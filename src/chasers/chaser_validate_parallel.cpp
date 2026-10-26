@@ -80,30 +80,24 @@ void chaser_validate::validate_block(const header_link& link,
     else if (bypass)
     {
         const auto silent = query.is_silent(link, ctx.height);
-        ec = complete_view(link, filter_, silent, silent &&
-            is_silent_capturing(link));
+        ec = (filter_ || silent) ? complete_view(link, filter_, silent,
+            silent && is_silent_capturing(link), true) : complete_bound(link);
     }
     else
     {
-        tx_links conflicts{};
-        prevout_spends spends{};
-        chain::view::block block
-        {
-            query.get_wire_block(link, node_witness_),
-            node_witness_
-        };
+        auto block = query.get_block_view(link, node_witness_);
 
         if (!block.is_valid())
         {
             ec = error::validate2;
         }
-        else if ((ec = populate(block, spends, conflicts, link, ctx)))
+        else if ((ec = populate(block, link, ctx)))
         {
-            if (!query.set_block_unconfirmable(link))
+            if (!database::error::error_category::contains(ec) &&
+                !query.set_block_unconfirmable(link))
                 ec = error::validate4;
         }
-        else if ((ec = validate(batched, capturing, block, spends, conflicts,
-            link, ctx)))
+        else if ((ec = validate(batched, capturing, block, link, ctx)))
         {
             if (!query.set_block_unconfirmable(link))
                 ec = error::validate5;
@@ -137,18 +131,23 @@ void chaser_validate::validate_block(const header_link& link,
 // helpers
 // ----------------------------------------------------------------------------
 
+// Internal maturity and time locks are verified by internal population, the
+// only necessary confirmation checks for internal spends. Every found spend
+// is bound, whether or not the block is valid.
 code chaser_validate::populate(chain::view::block& block,
-    prevout_spends& spends, tx_links& conflicts, const header_link& link,
-    const chain::context& ctx) NOEXCEPT
+    const header_link& link, const chain::context& ctx) NOEXCEPT
 {
-    // Spends identify internal spends allowing confirmation bypass.
-    system::data_chunk prevouts{};
-    if (!archive().get_block_prevouts(prevouts, spends, conflicts, link))
-        return system::error::missing_previous_output;
+    auto& query = archive();
+    const auto internal = block.populate(ctx);
+    const auto populated = query.populate_with_metadata(link, block);
+    if (populated && database::error::error_category::contains(populated))
+        return populated;
 
-    // Internal maturity and time locks are verified here because they are
-    // the only necessary confirmation checks for internal spends.
-    return block.populate(ctx, std::move(prevouts));
+    const auto bound = query.bind(link, block);
+    if (bound && bound != system::error::missing_previous_output)
+        return bound;
+
+    return internal ? internal : populated;
 }
 
 // Scan a validated block whose silent bank was dropped by restore.
@@ -160,33 +159,43 @@ void chaser_validate::scan_block(const header_link& link,
 
     size_t height{};
     const auto ec = archive().get_height(height, link) ?
-        complete_view(link, false, true, false) : error::validate3;
+        complete_view(link, false, true, false, false) : error::validate3;
 
     --validate_backlog_;
     complete_block(ec, link, height, bypass);
 }
 
-// A bypassed block is read only for its optional indexes, so it is not
-// materialized. A filter requires all prevouts, otherwise only those of the
-// silent payment eligible txs are populated.
+// A bypassed block is read only to bind its inputs and for its optional
+// indexes, so it is not materialized. A filter requires all prevouts,
+// otherwise only those of the silent payment eligible txs are populated.
 code chaser_validate::validate_view(const header_link& link, bool filter,
-    bool silent, bool bank) NOEXCEPT
+    bool silent, bool bank, bool bind) NOEXCEPT
 {
     auto& query = archive();
-    const auto witness = node_witness_ && silent;
-    auto wire = query.get_wire_block(link, witness);
-    chain::view::block block{ std::move(wire), witness };
+    auto block = query.get_block_view(link, node_witness_ && silent);
 
     if (!block.is_valid())
         return error::validate2;
 
-    data_chunk prevouts{};
-    std::vector<bool> selected{};
-    if (!(filter ?
-        query.get_block_prevouts(prevouts, selected, link, block) :
-        query.get_silent_prevouts(prevouts, selected, link, block)) ||
-        !block.populate(std::move(prevouts), selected))
-        return system::error::missing_previous_output;
+    if (!filter && !query.select_silent(link, block))
+        return database::error::integrity;
+
+    if (const auto ec = block.populate(chain::context{}))
+        return ec;
+
+    const auto populated = query.populate_with_metadata(link, block);
+    if (populated && database::error::error_category::contains(populated))
+        return populated;
+
+    if (bind)
+    {
+        const auto bound = query.bind(link, block);
+        if (bound && bound != system::error::missing_previous_output)
+            return bound;
+    }
+
+    if (populated)
+        return populated;
 
     if (filter && !query.set_filter_body(link, block))
         return error::validate8;
@@ -199,11 +208,26 @@ code chaser_validate::validate_view(const header_link& link, bool filter,
     return error::success;
 }
 
-code chaser_validate::complete_view(const header_link& link, bool filter,
-    bool silent, bool bank) NOEXCEPT
+// A bypassed block without optional indexes is bound from the store alone
+// (its inputs may be pruned).
+code chaser_validate::complete_bound(const header_link& link) NOEXCEPT
 {
     auto& query = archive();
-    const auto ec = validate_view(link, filter, silent, bank);
+    const auto ec = query.bind(link);
+    if (ec == system::error::missing_previous_output)
+        return query.set_block_unconfirmable(link) ? ec : error::validate4;
+
+    if (ec)
+        return ec;
+
+    return query.set_block_valid(link) ? error::success : error::validate10;
+}
+
+code chaser_validate::complete_view(const header_link& link, bool filter,
+    bool silent, bool bank, bool bind) NOEXCEPT
+{
+    auto& query = archive();
+    const auto ec = validate_view(link, filter, silent, bank, bind);
     if (ec == system::error::missing_previous_output)
         return query.set_block_unconfirmable(link) ? ec : error::validate4;
 
@@ -237,7 +261,7 @@ code chaser_validate::complete_pooled(const header_link& link) NOEXCEPT
     auto& query = archive();
     if (filter_)
     {
-        const auto ec = validate_view(link, true, false, false);
+        const auto ec = validate_view(link, true, false, false, false);
         if (ec == system::error::missing_previous_output)
             return error::validate11;
 
@@ -253,8 +277,7 @@ code chaser_validate::complete_pooled(const header_link& link) NOEXCEPT
 }
 
 code chaser_validate::validate(bool& batched, bool& capturing,
-    const chain::view::block& block, const prevout_spends& spends,
-    const tx_links& conflicts, const header_link& link,
+    const chain::view::block& block, const header_link& link,
     const chain::context& ctx) NOEXCEPT
 {
     auto& query = archive();
@@ -289,10 +312,6 @@ code chaser_validate::validate(bool& batched, bool& capturing,
     if (ec)
         return ec;
 
-    // Prevouts optimize confirmation.
-    if (!query.set_prevouts(link, spends, conflicts))
-        return error::validate7;
-
     if (!query.set_filter_body(link, block))
         return error::validate8;
 
@@ -302,7 +321,7 @@ code chaser_validate::validate(bool& batched, bool& capturing,
         return error::validate9;
 
     // Defer block state change when batched.
-    // Valid must be set after set_prevouts and set_filter_body.
+    // Valid must be set after set_filter_body.
     if (!batched && !query.set_block_valid(link))
         return error::validate10;
 

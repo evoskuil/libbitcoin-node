@@ -29,10 +29,12 @@ using type_id = peer::inventory_item::type_id;
 static constexpr uint64_t parent_value = 100'000;
 static const hash_digest missing_hash{ 0x42 };
 
-// An unconfirmed tx with an anyone-can-spend output.
+// An unconfirmed genesis spend with an anyone-can-spend output.
 static const chain::transaction& parent() NOEXCEPT
 {
-    const chain::point point{ one_hash, 0u };
+    const system::settings bitcoin{ chain::selection::mainnet };
+    const auto& coinbase = *bitcoin.genesis_block.transactions_ptr()->front();
+    const chain::point point{ coinbase.hash(false), 0u };
     const chain::operations ops{ { chain::opcode::push_positive_1 } };
     const chain::script spendable{ ops };
     static const chain::transaction instance
@@ -106,7 +108,13 @@ static peer::inventory announcement(size_t count, uint8_t tag) NOEXCEPT
 
 static bool stored_parent(node::query& query) NOEXCEPT
 {
-    return query.set(parent());
+    const auto& tx = parent();
+    if (!query.set(tx))
+        return false;
+
+    const auto link = query.to_tx(tx.hash(false));
+    const auto spent = query.to_output(tx.inputs_ptr()->front()->point());
+    return query.spend(query.to_point(link, 0), spent);
 }
 
 // Mainnet block 1 archived as a header without txs.
@@ -117,7 +125,7 @@ static bool stored_header(node::query& query) NOEXCEPT
     const auto& header1 = p2p_compact_setup_fixture::block1().header();
     const database::context context1{ 0, 1, genesis.timestamp() };
     const auto work1 = genesis.proof() + header1.proof();
-    return query.set(parent()) && query.set(header1, context1, work1, false);
+    return stored_parent(query) && query.set(header1, context1, work1, false);
 }
 
 BC_PUSH_WARNING(NO_THROW_IN_NOEXCEPT)

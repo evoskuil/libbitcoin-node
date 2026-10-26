@@ -248,10 +248,6 @@ void chaser_validate::do_bumped(height_t height) NOEXCEPT
                 post_scan(link, bypass);
             }
         }
-        else if (bypass && !filter_ && !query.is_silent(link, height))
-        {
-            complete_block(error::success, link, height, true);
-        }
         else
         {
             ++validate_backlog_;
@@ -289,8 +285,9 @@ void chaser_validate::complete_block(const code& ec, const header_link& link,
         handle_chase({}, chases::bump{});
     }
 
-    // Node errors are fatal (or disk full recoverable).
-    if (ec && node::error::error_category::contains(ec))
+    // Node and store errors are fatal (or disk full recoverable).
+    if (ec && (node::error::error_category::contains(ec) ||
+        database::error::error_category::contains(ec)))
     {
         LOGF("Fault validating [" << height << "] " << ec.message());
         fault(ec);

@@ -274,11 +274,15 @@ void chaser_transaction::do_submit(const transactions_cptr& txs, bool test,
 
     auto& query = archive();
     std::vector<bool> stored(txs->size());
-    std::transform(txs->cbegin(), txs->cend(), stored.begin(),
-        [&](const auto& tx) NOEXCEPT
-        {
-            return !tx->is_coinbase() && query.is_tx(tx->get_hash(false));
-        });
+    for (size_t at{}; at < txs->size(); ++at)
+    {
+        const auto& tx = *txs->at(at);
+        if (tx.is_coinbase())
+            continue;
+
+        if (!query.to_tx(tx.get_hash(false)).is_terminal())
+            stored.at(at) = true;
+    }
 
     size_t index{};
     if (const auto ec = validate(index, *txs, stored))
@@ -447,6 +451,9 @@ code chaser_transaction::fill(database::tx_link& out,
 
         if (const auto ec = validate(tx, ctx))
             return ec;
+
+        if (query.bind(out, tx))
+            return fault(error::transaction10);
 
         if (!query.set_pooled(out, tx, ctx, ctx.timestamp))
             return fault(error::transaction2);
