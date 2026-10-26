@@ -91,13 +91,14 @@ map_ptr chaser_download::split(const map_ptr& map) NOEXCEPT
 
 // `position` tracks the contiguous chain of associated candidate blocks.
 // `requested` tracks the last height of the current download window.
+// `previous` tracks the last height of the preceding download window.
 // `advanced` tracks `requested` less window blocks not yet validated.
 code chaser_download::start() NOEXCEPT
 {
     start_tracking();
     compact_timer_ = std::make_shared<deadline>(log, strand());
     set_position(archive().get_fork());
-    requested_ = advanced_ = position();
+    requested_ = previous_ = advanced_ = position();
     const auto added = set_unassociated();
     LOGN("Fork point (" << requested_ << ") unassociated (" << added << ").");
 
@@ -357,7 +358,7 @@ void chaser_download::do_regressed(height_t branch_point) NOEXCEPT
     // completion. The window must follow the position or the gap it awaits
     // is never requested.
     set_position(std::min(branch_point, position()));
-    requested_ = advanced_ = position();
+    requested_ = previous_ = advanced_ = position();
     stop_tracking();
     maps_.clear();
     notify(error::success, chases::purge{ branch_point });
@@ -371,11 +372,48 @@ void chaser_download::do_advanced(height_t) NOEXCEPT
     BC_ASSERT(stranded());
 
     // Validations are not ordered, so accumulate vs. compare height.
-    ++advanced_;
-
-    // The full count of requested hashes has been validated.
-    if (advanced_ == requested_)
+    // The preceding window is validated, so its points bank can drain.
+    if (++advanced_ == previous_)
         do_headers({});
+
+    // Validated to maximum height, so both points banks can drain.
+    if (advanced_ == maximum_height_)
+        drop_points();
+}
+
+// The points bank of the preceding window is drained and receives the next.
+bool chaser_download::flip_points() NOEXCEPT
+{
+    // Called from start.
+    ////BC_ASSERT(stranded());
+    const auto ec = archive().flip_points([this](auto LOG_ONLY(event_),
+        auto LOG_ONLY(table)) NOEXCEPT
+    {
+        LOGV("flip_points::" << full_node::store::events.at(event_)
+            << "(" << full_node::store::tables.at(table) << ")");
+    });
+
+    if (ec)
+        fault(ec);
+
+    return !ec;
+}
+
+// Both points banks are drained, as no window follows the maximum height.
+bool chaser_download::drop_points() NOEXCEPT
+{
+    BC_ASSERT(stranded());
+    const auto ec = archive().drop_points([this](auto LOG_ONLY(event_),
+        auto LOG_ONLY(table)) NOEXCEPT
+    {
+        LOGV("drop_points::" << full_node::store::events.at(event_)
+            << "(" << full_node::store::tables.at(table) << ")");
+    });
+
+    if (ec)
+        fault(ec);
+
+    return !ec;
 }
 
 void chaser_download::do_checked(height_t height) NOEXCEPT
@@ -504,8 +542,8 @@ size_t chaser_download::set_unassociated() NOEXCEPT
     if (position() < requested_)
         return {};
 
-    // Defer new work until validation caught up to request.
-    if (advanced_ < requested_)
+    // Defer new work until the preceding window is validated.
+    if (advanced_ < previous_)
         return {};
 
     // Inventory size gets set only once.
@@ -557,6 +595,15 @@ size_t chaser_download::set_unassociated() NOEXCEPT
 
         requested_ = map->top().height;
         count += map->size();
+    }
+
+    // The window is issued into a drained points bank (before any archive).
+    if (is_nonzero(count))
+    {
+        if (!flip_points())
+            return {};
+
+        previous_ = previous;
     }
 
     LOGN("Advance by ("

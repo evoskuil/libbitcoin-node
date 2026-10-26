@@ -66,6 +66,8 @@ protected:
     virtual void do_bump(height_t height) NOEXCEPT;
     virtual void do_checked(height_t height) NOEXCEPT;
     virtual void do_advanced(height_t height) NOEXCEPT;
+    virtual bool flip_points() NOEXCEPT;
+    virtual bool drop_points() NOEXCEPT;
     virtual void do_headers(height_t branch_point) NOEXCEPT;
     virtual void do_regressed(height_t branch_point) NOEXCEPT;
     virtual void do_handle_purged(const code& ec) NOEXCEPT;
@@ -104,6 +106,7 @@ private:
     // These are protected by strand.
     size_t inventory_{};
     size_t requested_{};
+    size_t previous_{};
     size_t advanced_{};
     job::ptr job_{};
     network::deadline::ptr compact_timer_{};
