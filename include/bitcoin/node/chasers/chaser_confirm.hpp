@@ -53,17 +53,19 @@ protected:
     virtual void do_bump(height_t height) NOEXCEPT;
 
     virtual void reorganize(header_states& fork, size_t top,
-        size_t fork_point) NOEXCEPT;
+        size_t fork_point, bool parallel) NOEXCEPT;
     virtual void organize(header_states& fork, const header_links& popped,
-        size_t fork_point) NOEXCEPT;
-    virtual bool confirm_block(const header_link& link,
-        size_t height, const header_links& popped, size_t fork_point) NOEXCEPT;
+        size_t fork_point, bool parallel) NOEXCEPT;
+    virtual bool confirm_block(const header_link& link, size_t height,
+        const header_links& popped, size_t fork_point, bool parallel) NOEXCEPT;
     virtual bool complete_block(const code& ec, const header_link& link,
         size_t height, bool bypass) NOEXCEPT;
     virtual bool notify_block(const code& ec, size_t height,
         const database::header_link& link, bool bypass) NOEXCEPT;
 
 private:
+    bool is_validated_recent(const header_link& top,
+        size_t height) const NOEXCEPT;
     bool set_reorganized(const header_link& link,
         height_t confirmed_height) NOEXCEPT;
     bool set_organized(const header_link& link,

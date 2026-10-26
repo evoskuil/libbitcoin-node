@@ -202,12 +202,24 @@ void chaser_confirm::do_bumped(height_t) NOEXCEPT
             return;
     }
 
-    reorganize(fork, top, fork_point);
+    // Once validation is recent, confirmation runs in parallel.
+    const auto parallel = is_validated_recent(fork.back().link,
+        fork_point + fork.size());
+
+    reorganize(fork, top, fork_point, parallel);
+}
+
+// The validated top is validated to maximum height or is current.
+bool chaser_confirm::is_validated_recent(const header_link& top,
+    size_t height) const NOEXCEPT
+{
+    return (height >= node_settings().maximum_height_()) ||
+        is_current_header(top);
 }
 
 // Pop confirmed chain from top down to above fork point, save popped.
 void chaser_confirm::reorganize(header_states& fork, size_t top,
-    size_t fork_point) NOEXCEPT
+    size_t fork_point, bool parallel) NOEXCEPT
 {
     BC_ASSERT(stranded());
     const auto& query = archive();
@@ -231,7 +243,7 @@ void chaser_confirm::reorganize(header_states& fork, size_t top,
     }
 
     // Top is now fork_point.
-    organize(fork, popped, fork_point);
+    organize(fork, popped, fork_point, parallel);
 }
 
 // Push candidates (fork) from above fork point to confirmed chain.
@@ -239,7 +251,7 @@ void chaser_confirm::reorganize(header_states& fork, size_t top,
 // Fork is always shortest candidate chain stronger than confirmed chain.
 // No bump required upon complete since fully stranded (no message loss).
 void chaser_confirm::organize(header_states& fork, const header_links& popped,
-    size_t fork_point) NOEXCEPT
+    size_t fork_point, bool parallel) NOEXCEPT
 {
     BC_ASSERT(stranded());
     auto& query = archive();
@@ -269,7 +281,8 @@ void chaser_confirm::organize(header_states& fork, const header_links& popped,
         else if (database::is_validated(item.state))
         {
             // False always sets a store fault (including for disk full).
-            if (!confirm_block(item.link, height, popped, fork_point))
+            if (!confirm_block(item.link, height, popped, fork_point,
+                parallel))
                 return;
         }
         else
@@ -292,12 +305,12 @@ void chaser_confirm::organize(header_states& fork, const header_links& popped,
 }
 
 bool chaser_confirm::confirm_block(const header_link& link, size_t height,
-    const header_links& popped, size_t fork_point) NOEXCEPT
+    const header_links& popped, size_t fork_point, bool parallel) NOEXCEPT
 {
     BC_ASSERT(stranded());
     auto& query = archive();
 
-    if (const auto ec = query.block_confirmable(link))
+    if (const auto ec = query.block_confirmable(link, parallel))
     {
         if (!query.set_block_unconfirmable(link))
         {
