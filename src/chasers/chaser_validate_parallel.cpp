@@ -150,6 +150,33 @@ code chaser_validate::populate(chain::view::block& block,
     return internal ? internal : populated;
 }
 
+// Bypassed blocks that are neither filtered nor silent are only bound.
+void chaser_validate::validate_bound(const header_links& links,
+    size_t first) NOEXCEPT
+{
+    if (closed())
+        return;
+
+    auto& query = archive();
+    for (size_t index{}; index < links.size(); ++index)
+    {
+        const header_link link{ links.at(index) };
+        auto result = query.bind(link);
+        if (result == system::error::missing_previous_output)
+        {
+            if (!query.set_block_unconfirmable(link))
+                result = error::validate4;
+        }
+        else if (!result && !query.set_block_valid(link))
+        {
+            result = error::validate10;
+        }
+
+        --validate_backlog_;
+        complete_block(result, link, first + index, true);
+    }
+}
+
 // Scan a validated block whose silent bank was dropped by restore.
 void chaser_validate::scan_block(const header_link& link,
     bool bypass) NOEXCEPT

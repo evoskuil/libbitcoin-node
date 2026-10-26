@@ -65,8 +65,11 @@ protected:
     /// Validation.
     virtual void post_block(const header_link& link, bool bypass) NOEXCEPT;
     virtual void post_scan(const header_link& link, bool bypass) NOEXCEPT;
+    virtual void post_bound(header_links& links, size_t first) NOEXCEPT;
     virtual void validate_block(const header_link& link, bool bypass) NOEXCEPT;
     virtual void scan_block(const header_link& link, bool bypass) NOEXCEPT;
+    virtual void validate_bound(const header_links& links,
+        size_t first) NOEXCEPT;
     virtual code validate(bool& batched, bool& capturing,
         const system::chain::view::block& block, const header_link& link,
         const system::chain::context& ctx) NOEXCEPT;

@@ -208,6 +208,8 @@ void chaser_validate::do_bumped(height_t height) NOEXCEPT
 {
     BC_ASSERT(stranded());
     const auto& query = archive();
+    header_links bound{};
+    auto first = height;
 
     // Bypass until next event if validation backlog is full.
     // Stop when suspended as write error does not terminate asynchronous loop.
@@ -219,16 +221,31 @@ void chaser_validate::do_bumped(height_t height) NOEXCEPT
         // Must exit on unassociated so they are not set valid in bypass.
         // Given height-based iteration, any block state may be enountered.
         if (!database::is_associated(state))
-            return;
+            break;
 
         // The last job requiring validation has been posted.
         if (height == maximum_height_)
             maximum_posted_ = true;
 
         if (database::is_unconfirmable(state))
-            return;
+            break;
 
         const auto bypass = database::is_bypass(state);
+        if (bypass && !database::is_validated(state) && !filter_ &&
+            !query.is_silent(link, height))
+        {
+            if (bound.empty())
+                first = height;
+
+            ++validate_backlog_;
+            bound.push_back(link.value);
+            set_position(height++);
+            continue;
+        }
+
+        // Bound heights are contiguous.
+        post_bound(bound, first);
+
         if (database::is_validated(state))
         {
             if (database::is_scanned(state))
@@ -239,7 +256,7 @@ void chaser_validate::do_bumped(height_t height) NOEXCEPT
             {
                 // Banked, scanned by the drain of its bank (which bumps).
                 process_silent_batch(true);
-                return;
+                break;
             }
             else
             {
@@ -258,6 +275,8 @@ void chaser_validate::do_bumped(height_t height) NOEXCEPT
         // So posted validations continue despite network suspension.
         set_position(height++);
     }
+
+    post_bound(bound, first);
 }
 
 void chaser_validate::post_block(const header_link& link,
@@ -272,6 +291,26 @@ void chaser_validate::post_scan(const header_link& link,
 {
     BC_ASSERT(stranded());
     PARALLEL(scan_block, link, bypass);
+}
+
+// Contiguous bypassed blocks are bound in one contiguous range per thread.
+void chaser_validate::post_bound(header_links& links, size_t first) NOEXCEPT
+{
+    BC_ASSERT(stranded());
+    if (links.empty())
+        return;
+
+    const auto count = links.size();
+    const auto ranges = std::min(count, node_settings().threads_());
+    const auto size = system::ceilinged_divide(count, ranges);
+    for (size_t start{}; start < count; start += size)
+    {
+        const auto begin = std::next(links.cbegin(), start);
+        const auto end = std::next(begin, std::min(size, count - start));
+        PARALLEL(validate_bound, header_links{ begin, end }, first + start);
+    }
+
+    links.clear();
 }
 
 // May be either concurrent or stranded.
