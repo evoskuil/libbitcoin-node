@@ -84,6 +84,10 @@ public:
     virtual void get_confirmable_fees(
         confirmable_fees_handler&& handler) NOEXCEPT;
 
+    /// Least and greatest value of receipts not spent, over conflict outcomes.
+    virtual void get_unconfirmed_range(const database::pool_receipts& receipts,
+        unconfirmed_range_handler&& handler) NOEXCEPT;
+
     /// Count of changes to the pool (thread safe).
     uint64_t pool_generation() const NOEXCEPT override;
 
@@ -141,6 +145,9 @@ protected:
         const confirmable_txs_handler& handler) NOEXCEPT;
     virtual void do_get_confirmable_fees(
         const confirmable_fees_handler& handler) NOEXCEPT;
+    virtual void do_get_unconfirmed_range(
+        const database::pool_receipts& receipts,
+        const unconfirmed_range_handler& handler) NOEXCEPT;
 
     /// Recompute pool context and sweep index by it if due, closing pool if not
     /// current or context not reusable, and map scan starts: built once

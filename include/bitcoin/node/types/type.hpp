@@ -54,6 +54,8 @@ typedef std::function<void(const code&,
     const database::tx_links&)> confirmable_txs_handler;
 typedef std::function<void(const code&,
     const database::fee_rates&)> confirmable_fees_handler;
+typedef std::function<void(const code&, uint64_t,
+    uint64_t)> unconfirmed_range_handler;
 
 /// Event desubscriber.
 typedef network::desubscriber<object_key, event_value> event_subscriber;

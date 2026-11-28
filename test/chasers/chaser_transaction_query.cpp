@@ -165,6 +165,36 @@ BC_FIXTURE_TEST_CASE(chaser_transaction__get_confirmable_fees__relay_off_pooled_
     BC_REQUIRE(rates.empty());
 }
 
+// get_unconfirmed_range
+
+BC_FIXTURE_TEST_CASE(chaser_transaction__get_unconfirmed_range__no_receipts__zeros, chaser_transaction_pooling_setup_fixture)
+{
+    const auto [ec, worst, best] = get_unconfirmed_range({});
+    BC_REQUIRE_EQUAL(ec, database::error::success);
+    BC_REQUIRE_EQUAL(worst, 0u);
+    BC_REQUIRE_EQUAL(best, 0u);
+}
+
+BC_FIXTURE_TEST_CASE(chaser_transaction__get_unconfirmed_range__pooled_tx__its_value, chaser_transaction_pooling_setup_fixture)
+{
+    const auto tx = spend(parent_value - 1'000);
+    const auto result = submit(package({ tx }));
+    const auto row = query_.to_pool_row(query_.to_tx(tx->hash(false)));
+    const auto [ec, worst, best] = get_unconfirmed_range({ { row.value, 42u, {} } });
+    BC_REQUIRE_EQUAL(result.first, node::error::success);
+    BC_REQUIRE_EQUAL(ec, database::error::success);
+    BC_REQUIRE_EQUAL(worst, 42u);
+    BC_REQUIRE_EQUAL(best, 42u);
+}
+
+BC_FIXTURE_TEST_CASE(chaser_transaction__get_unconfirmed_range__row_not_pooled__zeros, chaser_transaction_pooling_setup_fixture)
+{
+    const auto [ec, worst, best] = get_unconfirmed_range({ { 0u, 42u, {} } });
+    BC_REQUIRE_EQUAL(ec, database::error::success);
+    BC_REQUIRE_EQUAL(worst, 0u);
+    BC_REQUIRE_EQUAL(best, 0u);
+}
+
 // estimate
 
 BC_FIXTURE_TEST_CASE(chaser_transaction__estimate__relay_disabled__estimate_disabled, chaser_transaction_setup_fixture)

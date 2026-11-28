@@ -526,6 +526,19 @@ struct chaser_transaction_setup_fixture
         return promise.get_future().get();
     }
 
+    using ranged = std::tuple<code, uint64_t, uint64_t>;
+    ranged get_unconfirmed_range(const database::pool_receipts& receipts)
+    {
+        std::promise<ranged> promise{};
+        node_.get_unconfirmed_range(receipts, [&](const code& ec,
+            uint64_t worst, uint64_t best) NOEXCEPT
+        {
+            promise.set_value({ ec, worst, best });
+        });
+
+        return promise.get_future().get();
+    }
+
     // Confirm a block of a coinbase, and the tx if any, and notify of it.
     database::header_link confirm(const chain::transaction::cptr& tx={})
     {

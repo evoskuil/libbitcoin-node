@@ -233,6 +233,12 @@ void session::get_confirmable_fees(confirmable_fees_handler&& handler) NOEXCEPT
     node_.get_confirmable_fees(std::move(handler));
 }
 
+void session::get_unconfirmed_range(const database::pool_receipts& receipts,
+    unconfirmed_range_handler&& handler) NOEXCEPT
+{
+    node_.get_unconfirmed_range(receipts, std::move(handler));
+}
+
 void session::performance(object_key key, uint64_t speed,
     result_handler&& handler) NOEXCEPT
 {

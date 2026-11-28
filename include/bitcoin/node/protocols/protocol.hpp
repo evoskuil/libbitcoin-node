@@ -113,6 +113,10 @@ protected:
     /// Fee rate tuples of the confirmable txs, in pool order.
     void get_confirmable_fees(confirmable_fees_handler&& handler) NOEXCEPT;
 
+    /// Least and greatest value of receipts not spent, over conflict outcomes.
+    void get_unconfirmed_range(const database::pool_receipts& receipts,
+        unconfirmed_range_handler&& handler) NOEXCEPT;
+
     /// Suspensions.
     /// -----------------------------------------------------------------------
 

@@ -122,6 +122,16 @@ void chaser_transaction::get_confirmable_fees(
     POST(do_get_confirmable_fees, std::move(handler));
 }
 
+void chaser_transaction::get_unconfirmed_range(
+    const database::pool_receipts& receipts,
+    unconfirmed_range_handler&& handler) NOEXCEPT
+{
+    if (closed())
+        return;
+
+    POST(do_get_unconfirmed_range, receipts, std::move(handler));
+}
+
 // private
 void chaser_transaction::do_build_template(
     const template_handler& handler) NOEXCEPT
@@ -300,6 +310,27 @@ void chaser_transaction::do_get_confirmable_fees(
     const auto ec = archive().get_confirmable_fees(rates);
     report(pool_scan::confirmable, start);
     handler(ec, rates);
+}
+
+// private
+void chaser_transaction::do_get_unconfirmed_range(
+    const database::pool_receipts& receipts,
+    const unconfirmed_range_handler& handler) NOEXCEPT
+{
+    BC_ASSERT(stranded());
+
+    if (closed())
+    {
+        handler(network::error::service_stopped, {}, {});
+        return;
+    }
+
+    uint64_t worst{};
+    uint64_t best{};
+    const auto& settings = node_settings().pool;
+    const auto ec = archive().get_unconfirmed_range(worst, best, receipts,
+        settings.maximum_outcomes);
+    handler(ec, worst, best);
 }
 
 BC_POP_WARNING()

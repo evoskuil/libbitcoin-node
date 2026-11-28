@@ -236,6 +236,10 @@ public:
     /// Fee rate tuples of the confirmable txs, in pool order.
     void get_confirmable_fees(confirmable_fees_handler&& handler) NOEXCEPT;
 
+    /// Least and greatest value of receipts not spent, over conflict outcomes.
+    void get_unconfirmed_range(const database::pool_receipts& receipts,
+        unconfirmed_range_handler&& handler) NOEXCEPT;
+
     /// Handle performance, base returns false (implied terminate).
     virtual void performance(object_key channel, uint64_t speed,
         result_handler&& handler) NOEXCEPT;
