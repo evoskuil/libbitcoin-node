@@ -278,12 +278,13 @@ struct chaser_header_setup_fixture
         return future.get();
     }
 
-    /// Organize a submitted header.
-    result organize_submitted(const system::chain::header::cptr& header)
+    /// Organize a submitted header, milestone set if trusted.
+    result organize_submitted(const system::chain::header::cptr& header,
+        bool milestone=false)
     {
         const auto promise = std::make_shared<std::promise<result>>();
         auto future = promise->get_future();
-        header_.organize_submitted(header, [promise](const code& ec,
+        header_.organize_submitted(header, milestone, [promise](const code& ec,
             size_t height) NOEXCEPT
         {
             promise->set_value({ ec, height });
@@ -933,6 +934,17 @@ BC_FIXTURE_TEST_CASE(chaser_header__organize_submitted__block1__compact_candidat
     BC_REQUIRE_EQUAL(result.second, 1u);
     BC_REQUIRE(candidate(1, header->hash()));
     BC_REQUIRE(query_.is_compact(query_.to_header(header->hash())));
+    BC_REQUIRE(!query_.is_milestone(query_.to_header(header->hash())));
+}
+
+BC_FIXTURE_TEST_CASE(chaser_header__organize_submitted__trusted_block1__archived_milestone, chaser_header_setup_fixture)
+{
+    const auto header = block1();
+    const auto result = organize_submitted(header, true);
+    BC_REQUIRE_EQUAL(result.first, error::success);
+    BC_REQUIRE_EQUAL(result.second, 1u);
+    BC_REQUIRE(candidate(1, header->hash()));
+    BC_REQUIRE(query_.is_milestone(query_.to_header(header->hash())));
 }
 
 BC_FIXTURE_TEST_CASE(chaser_header__organize__tied_block1__cached, chaser_header_setup_fixture)

@@ -120,12 +120,13 @@ void chaser_header::organize_compact(const header::cptr& header,
 }
 
 void chaser_header::organize_submitted(const header::cptr& header,
-    organize_handler&& handler) NOEXCEPT
+    bool milestone, organize_handler&& handler) NOEXCEPT
 {
     if (closed())
         return;
 
-    POST(do_organize, header, true, false, true, false, std::move(handler));
+    POST(do_organize, header, true, milestone, true, false,
+        std::move(handler));
 }
 
 void chaser_header::prioritize(const hash_digest& hash,

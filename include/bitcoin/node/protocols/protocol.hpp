@@ -135,9 +135,10 @@ protected:
     virtual void organize_compact(const system::chain::header::cptr& header,
         organize_handler&& handler) NOEXCEPT;
 
-    /// Organize a submitted (proven) header, prioritized (a tie wins).
+    /// Organize a submitted (proven) header, prioritized (a tie wins),
+    /// milestone set if trusted.
     virtual void organize_submitted(const system::chain::header::cptr& header,
-        organize_handler&& handler) NOEXCEPT;
+        bool milestone, organize_handler&& handler) NOEXCEPT;
 
     /// Reorganize to the branch of an archived block of at least equal work.
     virtual void prioritize(const system::hash_digest& hash,

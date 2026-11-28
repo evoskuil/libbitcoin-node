@@ -178,9 +178,9 @@ void full_node::organize_compact(const system::chain::header::cptr& header,
 }
 
 void full_node::organize_submitted(const system::chain::header::cptr& header,
-    organize_handler&& handler) NOEXCEPT
+    bool milestone, organize_handler&& handler) NOEXCEPT
 {
-    chaser_header_.organize_submitted(header, std::move(handler));
+    chaser_header_.organize_submitted(header, milestone, std::move(handler));
 }
 
 void full_node::prioritize(const system::hash_digest& hash,

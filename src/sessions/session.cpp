@@ -58,9 +58,9 @@ void session::organize_compact(const header::cptr& header,
 }
 
 void session::organize_submitted(const header::cptr& header,
-    organize_handler&& handler) NOEXCEPT
+    bool milestone, organize_handler&& handler) NOEXCEPT
 {
-    node_.organize_submitted(header, std::move(handler));
+    node_.organize_submitted(header, milestone, std::move(handler));
 }
 
 void session::prioritize(const hash_digest& hash,
